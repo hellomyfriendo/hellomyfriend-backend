@@ -43,10 +43,6 @@ resource "google_cloud_run_v2_service" "backend" {
       }
     }
   }
-
-  depends_on = [
-    google_firestore_index.mandatory_medical_device_problem_reporting_form_for_industry_data_extractions_jobid_and_created_at
-  ]
 }
 
 resource "google_cloud_run_service_iam_member" "allow_unauthenticated" {
