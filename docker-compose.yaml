@@ -1,0 +1,25 @@
+version: '3.9'
+services:
+  app:
+    build: .
+    ports:
+      - ${PORT}:${PORT}
+    environment:
+      - GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID}
+      - PORT=${PORT}
+      - USERS_FIRESTORE_USERS_COLLECTION=${USERS_FIRESTORE_USERS_COLLECTION}
+    depends_on:
+      firestore_emulator:
+        condition: service_healthy
+  firestore_emulator:
+    image: 'mtlynch/firestore-emulator'
+    ports:
+      - 9200:9200
+    environment:
+      - FIRESTORE_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID}
+      - PORT=9200
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://firestore_emulator:9200']
+      interval: 5s
+      timeout: 5s
+      retries: 10
