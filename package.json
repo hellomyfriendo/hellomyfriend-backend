@@ -43,7 +43,8 @@
   },
   "lint-staged": {
     "*.{json, md,yaml}": "prettier --write",
-    "*.{js,ts}": "gts fix"
+    "*.{js,ts}": "gts fix",
+    "*.tf": "terraform fmt"
   },
   "dependencies": {
     "@google-cloud/firestore": "^6.6.1",

@@ -22,8 +22,7 @@ provider "docker" {
 module "backend" {
   source = "./modules/backend"
 
-  project_id     = var.project_id
-  region         = var.region
-  backend_image  = var.backend_image
-  backend_domain = var.backend_domain
+  project_id    = var.project_id
+  region        = var.region
+  backend_image = var.backend_image
 }
