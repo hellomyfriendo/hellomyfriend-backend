@@ -8,7 +8,7 @@ const envVarsSchema = Joi.object()
     K_REVISION: Joi.string().required(),
     K_SERVICE: Joi.string().required(),
     USERS_FIRESTORE_USERS_COLLECTION: Joi.string().required(),
-    WANTS_FIRESTORE_USERS_COLLECTION: Joi.string().required(),
+    WANTS_FIRESTORE_WANTS_COLLECTION: Joi.string().required(),
   })
   .unknown();
 
@@ -38,7 +38,7 @@ const config = {
   wants: {
     firestore: {
       collections: {
-        wants: envVars.WANTS_FIRESTORE_USERS_COLLECTION,
+        wants: envVars.WANTS_FIRESTORE_WANTS_COLLECTION,
       },
     },
   },
