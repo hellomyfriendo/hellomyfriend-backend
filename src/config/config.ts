@@ -2,7 +2,6 @@ import {Joi} from 'celebrate';
 
 const envVarsSchema = Joi.object()
   .keys({
-    GOOGLE_CLOUD_CLOUD_RUN_SERVICE: Joi.string().required(),
     GOOGLE_CLOUD_PROJECT_ID: Joi.string().required(),
     LOG_LEVEL: Joi.string().valid('debug', 'info').default('info'),
     PORT: Joi.number().integer().required(),
