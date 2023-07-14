@@ -1,0 +1,28 @@
+steps:
+  # backend
+  - name: 'gcr.io/cloud-builders/docker'
+    id: backend-docker-build
+    dir: backend
+    args:
+      - 'build'
+      - '--tag=${_BACKEND_IMAGE}'
+      - '.'
+  - name: 'gcr.io/cloud-builders/docker'
+    id: backend-docker-push
+    args:
+      - 'push'
+      - '${_BACKEND_IMAGE}'
+  # apps
+  - name: 'hashicorp/terraform'
+    id: terraform-apply-apps
+    dir: infra/deployment/terraform/apps
+    script: |
+      terraform init -backend-config=bucket=$TFSTATE_BUCKET
+
+      terraform apply --auto-approve
+    env:
+      - 'TFSTATE_BUCKET=${_TFSTATE_BUCKET}'
+      - 'TF_VAR_project_id=${PROJECT_ID}'
+      - 'TF_VAR_region=${_REGION}'
+      - 'TF_VAR_backend_domain=${_BACKEND_DOMAIN}'
+      - 'TF_VAR_backend_image=${_BACKEND_IMAGE}'
