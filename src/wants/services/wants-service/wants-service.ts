@@ -53,12 +53,12 @@ class WantsService {
   constructor(private readonly settings: WantsServiceSettings) {}
 
   async createWant(options: CreateWantOptions) {
-    const creator = await this.settings.usersService.getUserByFirebaseUid(
+    const creator = await this.settings.usersService.getUserById(
       options.creatorId
     );
 
     if (!creator) {
-      throw new NotFoundError(`Creator uid ${options.creatorId} not found`);
+      throw new NotFoundError(`Creator id ${options.creatorId} not found`);
     }
 
     const now = new Date();
