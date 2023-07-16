@@ -24,6 +24,7 @@ const wantConverter: FirestoreDataConverter<Want> = {
       id: snapshot.id,
       creatorId: data.creatorId,
       title: data.title,
+      description: data.description,
       visibility: data.visibility,
       location: data.location,
       createdAt: data.createdAt.toDate(),
@@ -45,6 +46,7 @@ interface WantsServiceSettings {
 interface CreateWantOptions {
   creatorId: string;
   title: string;
+  description: string;
   visibility: WantVisibility;
   location: WantLocation;
 }
@@ -68,6 +70,7 @@ class WantsService {
       .add({
         creatorId: creator.id,
         title: options.title,
+        description: options.description,
         visibility: options.visibility,
         location: options.location,
         createdAt: Timestamp.fromDate(now),

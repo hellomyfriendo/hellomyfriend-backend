@@ -21,6 +21,7 @@ class WantsRouterV1 {
         [Segments.BODY]: Joi.object()
           .keys({
             title: Joi.string().required(),
+            description: Joi.string().required(),
             visibility: Joi.alternatives()
               .try(
                 Joi.string().valid(...Object.values(WantVisibility)),
@@ -48,11 +49,12 @@ class WantsRouterV1 {
             throw new UnauthorizedError('user not found in req');
           }
 
-          const {title, visibility, location} = req.body;
+          const {title, description, visibility, location} = req.body;
 
           const want = await this.settings.wantsService.createWant({
             creatorId: user.id,
             title,
+            description,
             visibility,
             location,
           });

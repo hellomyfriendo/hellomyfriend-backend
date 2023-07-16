@@ -5,6 +5,7 @@ interface Want {
   id: string;
   creatorId: string;
   title: string;
+  description: string;
   visibility: WantVisibility;
   location: WantLocation;
   createdAt: Date;
