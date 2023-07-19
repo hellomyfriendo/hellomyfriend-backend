@@ -4,8 +4,7 @@ import {
   Timestamp,
 } from '@google-cloud/firestore';
 import {Storage} from '@google-cloud/storage';
-import {fileTypeFromBuffer} from 'file-type';
-import {} from 'lodash';
+import mime from 'mime-types';
 import {Want, WantImage, WantLocation, WantVisibility} from '../../models';
 import {NotFoundError} from '../../../errors';
 import {UsersService} from '../../../users';
@@ -67,7 +66,10 @@ interface UpdateWantOptions {
   description?: string;
   visibility?: WantVisibility;
   location?: WantLocation;
-  imageData: Buffer;
+  image: {
+    data: Buffer;
+    mimeType: string;
+  };
 }
 
 class WantsService {
@@ -149,10 +151,10 @@ class WantsService {
         wantData.location = updateWantOptions.location;
       }
 
-      if (updateWantOptions.imageData) {
+      if (updateWantOptions.image) {
         const imageUrl = await this.uploadWantImage(
           wantId,
-          updateWantOptions.imageData
+          updateWantOptions.image
         );
 
         const wantImage: WantImage = {
@@ -171,27 +173,41 @@ class WantsService {
     return (await this.getWantById(wantId))!;
   }
 
-  private async uploadWantImage(wantId: string, imageData: Buffer) {
+  private async uploadWantImage(
+    wantId: string,
+    // TODO(Marcus): Check mimeType from Buffer? Could use https://github.com/sindresorhus/file-type but converting this project to ESM seems a bit of a hassle at this point.
+    image: {data: Buffer; mimeType: string}
+  ) {
     const want = await this.getWantById(wantId);
 
     if (!want) {
       throw new NotFoundError(`Want ${wantId} not found`);
     }
 
-    const fileType = await fileTypeFromBuffer(imageData);
+    // See https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
+    const allowedMimeTypes = [
+      'image/bmp',
+      'image/jpeg',
+      'image/png',
+      'image/svg+xml',
+      'image/webp',
+    ];
 
-    if (!fileType) {
-      throw new RangeError('Could not determine fileType from imageData');
+    if (!allowedMimeTypes.includes(image.mimeType)) {
+      throw new RangeError(
+        `Invalid image mimeType ${
+          image.mimeType
+        }. Allowed values: ${allowedMimeTypes.join(',')}`
+      );
     }
 
-    // TODO(Marcus): Check for allowed file types?
-    const fileName = `${wantId}.${fileType.ext}`;
+    const fileName = `${wantId}.${mime.extension(image.mimeType)}`;
 
     const gcsFile = this.settings.storage.client
       .bucket(this.settings.storage.buckets.wantsImages)
       .file(fileName);
 
-    await gcsFile.save(imageData);
+    await gcsFile.save(image.data);
 
     return gcsFile.publicUrl();
   }

@@ -3,8 +3,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "build",
-    "esModuleInterop": true,
-    "skipLibCheck": true
+    "esModuleInterop": true
   },
   "include": ["src/**/*.ts", "test/**/*.ts"]
 }

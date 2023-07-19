@@ -117,7 +117,10 @@ class WantsRouterV1 {
         const updatedWant = await this.settings.wantsService.updateWantById(
           want.id,
           {
-            imageData: uploadedImage.data,
+            image: {
+              data: uploadedImage.data,
+              mimeType: uploadedImage.mimetype,
+            },
           }
         );
 
