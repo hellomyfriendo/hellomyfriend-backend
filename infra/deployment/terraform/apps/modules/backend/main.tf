@@ -29,7 +29,7 @@ resource "google_storage_bucket" "wants_images" {
 resource "google_storage_bucket_iam_member" "wants_images_all_users_reader" {
   bucket = google_storage_bucket.wants_images.name
   role   = "roles/storage.legacyObjectReader"
-  member = "user:allUsers"
+  member = "allUsers"
 }
 
 resource "google_cloud_run_v2_service" "backend" {
