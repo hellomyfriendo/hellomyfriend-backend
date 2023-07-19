@@ -30,6 +30,7 @@ const wantConverter: FirestoreDataConverter<Want> = {
       description: data.description,
       visibility: data.visibility,
       location: data.location,
+      image: data.image,
       createdAt: data.createdAt.toDate(),
       updatedAt: data.updatedAt.toDate(),
     };
