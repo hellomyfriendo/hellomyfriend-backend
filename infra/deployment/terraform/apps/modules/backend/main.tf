@@ -19,7 +19,7 @@ resource "random_string" "buckets_prefix" {
 }
 
 resource "google_storage_bucket" "wants_images" {
-  name          = "${random_string.buckets_suffix.result}-backend-wants-images"
+  name          = "${random_string.buckets_prefix.result}-backend-wants-images"
   location      = var.region
   force_destroy = true
 
