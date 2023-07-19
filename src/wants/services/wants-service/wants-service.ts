@@ -55,7 +55,7 @@ interface WantsServiceSettings {
 interface CreateWantOptions {
   creator: string;
   title: string;
-  description: string;
+  description?: string;
   visibility: WantVisibility;
   location: WantLocation;
 }

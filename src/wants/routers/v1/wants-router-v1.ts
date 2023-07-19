@@ -22,7 +22,7 @@ class WantsRouterV1 {
         [Segments.BODY]: Joi.object()
           .keys({
             title: Joi.string().required(),
-            description: Joi.string().required(),
+            description: Joi.string(),
             visibility: Joi.alternatives()
               .try(
                 Joi.string().valid(...Object.values(WantVisibility)),

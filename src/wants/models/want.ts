@@ -7,7 +7,7 @@ interface Want {
   creator: string;
   admins: string[];
   title: string;
-  description: string;
+  description?: string;
   visibility: WantVisibility;
   location: WantLocation;
   image?: WantImage;
