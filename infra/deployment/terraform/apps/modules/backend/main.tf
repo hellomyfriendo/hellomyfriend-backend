@@ -26,6 +26,7 @@ resource "google_storage_bucket" "wants_images" {
   uniform_bucket_level_access = true
 }
 
+# TODO(Marcus): Use Load Balancer + CDN to serve images
 resource "google_storage_bucket_iam_member" "wants_images_all_users_reader" {
   bucket = google_storage_bucket.wants_images.name
   role   = "roles/storage.legacyObjectReader"
