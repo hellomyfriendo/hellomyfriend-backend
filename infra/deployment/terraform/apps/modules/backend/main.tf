@@ -12,6 +12,26 @@ data "docker_registry_image" "backend" {
   name = var.backend_image
 }
 
+resource "random_string" "buckets_prefix" {
+  length  = 4
+  special = false
+  upper   = false
+}
+
+resource "google_storage_bucket" "wants_images" {
+  name          = "${random_string.buckets_suffix.result}-backend-wants-images"
+  location      = var.region
+  force_destroy = true
+
+  uniform_bucket_level_access = true
+}
+
+resource "google_storage_bucket_iam_member" "wants_images_all_users_reader" {
+  bucket = google_storage_bucket.wants_images.name
+  role   = "roles/storage.legacyObjectReader"
+  member = "user:allUsers"
+}
+
 resource "google_cloud_run_v2_service" "backend" {
   name     = "backend"
   location = var.region
@@ -40,6 +60,10 @@ resource "google_cloud_run_v2_service" "backend" {
       env {
         name  = "WANTS_FIRESTORE_WANTS_COLLECTION"
         value = local.wants_wants_collection
+      }
+      env {
+        name  = "WANTS_STORAGE_WANTS_IMAGES_BUCKET"
+        value = google_storage_bucket.wants_images.name
       }
     }
   }
