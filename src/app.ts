@@ -2,23 +2,29 @@ import express from 'express';
 import crypto from 'crypto';
 import pinoHttp from 'pino-http';
 import cors from 'cors';
+import fileUpload from 'express-fileupload';
 import {Firestore} from '@google-cloud/firestore';
+import {Storage} from '@google-cloud/storage';
 import {initializeApp} from 'firebase-admin/app';
 import * as firebaseAdmin from 'firebase-admin';
 import {logger} from './logger';
 import {UsersService} from './users';
 import {errorHandler} from './error-handler';
 import {config} from './config';
-import {WantsService} from './wants';
+import {WantsRouterV1, WantsService} from './wants';
 import {AuthService} from './auth';
 import {Auth} from './middleware';
-import {WantsRouterV1} from './wants/routers';
 
 initializeApp({
   projectId: config.googleCloud.projectId,
 });
 
 const firestore = new Firestore({
+  projectId: config.googleCloud.projectId,
+  ignoreUndefinedProperties: true,
+});
+
+const storage = new Storage({
   projectId: config.googleCloud.projectId,
 });
 
@@ -36,6 +42,12 @@ const wantsService = new WantsService({
     client: firestore,
     collections: {
       wants: config.wants.firestore.collections.wants,
+    },
+  },
+  storage: {
+    client: storage,
+    buckets: {
+      wantsImages: config.wants.storage.buckets.wantsImages,
     },
   },
   usersService,
@@ -80,9 +92,11 @@ app.use(
   })
 );
 
+app.use(cors());
+
 app.use(express.json());
 
-app.use(cors());
+app.use(fileUpload());
 
 app.use(
   new Auth({

@@ -9,6 +9,7 @@ const envVarsSchema = Joi.object()
     K_SERVICE: Joi.string().required(),
     USERS_FIRESTORE_USERS_COLLECTION: Joi.string().required(),
     WANTS_FIRESTORE_WANTS_COLLECTION: Joi.string().required(),
+    WANTS_STORAGE_WANTS_IMAGES_BUCKET: Joi.string().required(),
   })
   .unknown();
 
@@ -39,6 +40,11 @@ const config = {
     firestore: {
       collections: {
         wants: envVars.WANTS_FIRESTORE_WANTS_COLLECTION,
+      },
+    },
+    storage: {
+      buckets: {
+        wantsImages: envVars.WANTS_STORAGE_WANTS_IMAGES_BUCKET,
       },
     },
   },

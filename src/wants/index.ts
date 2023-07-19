@@ -1,2 +1,2 @@
 export {WantsService} from './services';
-export {} from './routers';
+export {WantsRouterV1} from './routers';

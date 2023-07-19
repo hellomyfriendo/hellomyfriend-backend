@@ -12,11 +12,11 @@
 1. Run `gcloud auth login && gcloud application-default login`.
 1. `cd` into the [bootstrap](../infra/deployment/terraform/bootstrap) directory.
 1. Create a [`terraform.tfvars`](https://developer.hashicorp.com/terraform/language/values/variables#variable-definitions-tfvars-files) file and fill out the variables' values. Leave the following variables empty for now:
-    * `sourcerepo_name`
+   - `sourcerepo_name`
 1. Comment out the entire contents of the `backend.tf` file.
 1. Run `terraform init`.
 1. Run `terraform apply -target=module.project`.
-1. Uncomment the contents of the `backend.tf` file and add set the `bucket` attribute as the value of the `tfstate_bucket` output. 
+1. Uncomment the contents of the `backend.tf` file and add set the `bucket` attribute as the value of the `tfstate_bucket` output.
 1. Run `terraform init` and type `yes`.
 1. Create a [Cloud Source Repository](https://cloud.google.com/source-repositories/docs/creating-an-empty-repository#create_a_new_repository). Update the value of the `sourcerepo_name` variable in the `terraform.tfvars` file.
 1. Run `terraform apply`.
@@ -24,5 +24,5 @@
 ## Apps Deployment
 
 1. Deploy the Apps by either:
-    * Pushing code to the respective `branch_name`.
-    * Manually running the `apps` Cloud Build Trigger.
+   - Pushing code to the respective `branch_name`.
+   - Manually running the `apps` Cloud Build Trigger.
