@@ -33,14 +33,6 @@ class WantsRouterV1 {
               address: Joi.string(),
               radiusInMeters: Joi.number(),
             }),
-            location: Joi.alternatives()
-              .try(
-                Joi.object().keys({
-                  address: Joi.string().required(),
-                  radiusInMeters: Joi.number().required(),
-                })
-              )
-              .required(),
           })
           .required(),
       }),
