@@ -5,9 +5,12 @@ services:
     ports:
       - ${PORT}:${PORT}
     environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - GOOGLE_PROJECT_ID=${GOOGLE_PROJECT_ID}
       - PORT=${PORT}
       - USERS_FIRESTORE_USERS_COLLECTION=${USERS_FIRESTORE_USERS_COLLECTION}
+      - WANTS_FIRESTORE_WANTS_COLLECTION=${WANTS_FIRESTORE_WANTS_COLLECTION}
+      - WANTS_STORAGE_WANTS_IMAGES_BUCKET=${WANTS_STORAGE_WANTS_IMAGES_BUCKET}
     depends_on:
       firestore_emulator:
         condition: service_healthy
