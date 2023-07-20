@@ -4,32 +4,55 @@ import {
   Timestamp,
 } from '@google-cloud/firestore';
 import {Storage} from '@google-cloud/storage';
+import {Client} from '@googlemaps/google-maps-services-js';
+import {geohashForLocation} from 'geofire-common';
 import mime from 'mime-types';
-import {Want, WantImage, WantLocation, WantVisibility} from '../../models';
+import {Want, WantImage, WantVisibility, WantVisibleTo} from '../../models';
 import {NotFoundError} from '../../../errors';
 import {UsersService} from '../../../users';
 
-const wantConverter: FirestoreDataConverter<Want> = {
+interface WantDocVisibility {
+  visibleTo: WantVisibleTo | string[];
+  address?: string;
+  radiusInMeters?: number;
+  googlePlaceId?: string;
+  location?: {
+    lat: number;
+    lng: number;
+  };
+  geohash?: string;
+}
+
+interface WantDoc {
+  creator: string;
+  admins: string[];
+  title: string;
+  description?: string;
+  visibility: WantDocVisibility;
+  image?: WantImage;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const wantDocConverter: FirestoreDataConverter<WantDoc> = {
   toFirestore: function (
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    modelObject: FirebaseFirestore.WithFieldValue<Want>
+    modelObject: FirebaseFirestore.WithFieldValue<WantDoc>
   ): FirebaseFirestore.DocumentData {
     throw new Error('Function not implemented.');
   },
 
   fromFirestore: function (
     snapshot: FirebaseFirestore.QueryDocumentSnapshot<FirebaseFirestore.DocumentData>
-  ): Want {
+  ): WantDoc {
     const data = snapshot.data();
 
     return {
-      id: snapshot.id,
       creator: data.creator,
       admins: data.admins,
       title: data.title,
       description: data.description,
       visibility: data.visibility,
-      location: data.location,
       image: data.image,
       createdAt: data.createdAt.toDate(),
       updatedAt: data.updatedAt.toDate(),
@@ -50,6 +73,8 @@ interface WantsServiceSettings {
       wantsImages: string;
     };
   };
+  googleApiKey: string;
+  googleMapsServicesClient: Client;
   usersService: UsersService;
 }
 
@@ -58,7 +83,6 @@ interface CreateWantOptions {
   title: string;
   description?: string;
   visibility: WantVisibility;
-  location: WantLocation;
 }
 
 interface UpdateWantOptions {
@@ -66,7 +90,6 @@ interface UpdateWantOptions {
   title?: string;
   description?: string;
   visibility?: WantVisibility;
-  location?: WantLocation;
   image: {
     data: Buffer;
     mimeType: string;
@@ -76,13 +99,41 @@ interface UpdateWantOptions {
 class WantsService {
   constructor(private readonly settings: WantsServiceSettings) {}
 
-  async createWant(options: CreateWantOptions) {
+  async createWant(options: CreateWantOptions): Promise<Want> {
     const creator = await this.settings.usersService.getUserById(
       options.creator
     );
 
     if (!creator) {
       throw new NotFoundError(`Creator id ${options.creator} not found`);
+    }
+
+    let wantDocVisibility: WantDocVisibility = {
+      visibleTo: options.visibility.visibleTo,
+    };
+
+    if (options.visibility.address || options.visibility.radiusInMeters) {
+      if (!options.visibility.address) {
+        throw new RangeError('Address is required when radiusInMeters is set');
+      }
+
+      if (!options.visibility.address) {
+        throw new RangeError('Address is required when radiusInMeters is set');
+      }
+
+      const geocodedAddress = await this.geocodeAddress(
+        options.visibility.address
+      );
+
+      wantDocVisibility = {
+        ...wantDocVisibility,
+        googlePlaceId: geocodedAddress.place_id,
+        location: geocodedAddress.geometry.location,
+        geohash: geohashForLocation([
+          geocodedAddress.geometry.location.lat,
+          geocodedAddress.geometry.location.lng,
+        ]),
+      };
     }
 
     const now = new Date();
@@ -94,27 +145,57 @@ class WantsService {
         admins: [creator.id],
         title: options.title,
         description: options.description,
-        visibility: options.visibility,
-        location: options.location,
+        visibility: wantDocVisibility,
         createdAt: Timestamp.fromDate(now),
         updatedAt: Timestamp.fromDate(now),
       });
 
-    return await this.getWantById(wantDocRef.id)!;
+    const want = await this.getWantById(wantDocRef.id);
+
+    if (!want) {
+      throw new Error(
+        'This should not happen. Want should not be undefined at this point'
+      );
+    }
+
+    return want;
   }
 
-  async getWantById(wantId: string) {
-    const userDocSnapshot = await this.settings.firestore.client
+  async getWantById(wantId: string): Promise<Want | undefined> {
+    const wantDocSnapshot = await this.settings.firestore.client
       .doc(`${this.settings.firestore.collections.wants}/${wantId}`)
-      .withConverter(wantConverter)
+      .withConverter(wantDocConverter)
       .get();
 
-    const userDocData = userDocSnapshot.data();
+    const wantDocData = wantDocSnapshot.data();
 
-    return userDocData;
+    if (!wantDocData) {
+      return;
+    }
+
+    const want: Want = {
+      id: wantDocSnapshot.id,
+      creator: wantDocData.creator,
+      admins: wantDocData.admins,
+      title: wantDocData.title,
+      description: wantDocData.description,
+      visibility: {
+        visibleTo: wantDocData.visibility.visibleTo,
+        address: wantDocData.visibility.address,
+        radiusInMeters: wantDocData.visibility.radiusInMeters,
+      },
+      image: wantDocData.image,
+      createdAt: wantDocData.createdAt,
+      updatedAt: wantDocData.updatedAt,
+    };
+
+    return want;
   }
 
-  async updateWantById(wantId: string, updateWantOptions: UpdateWantOptions) {
+  async updateWantById(
+    wantId: string,
+    updateWantOptions: UpdateWantOptions
+  ): Promise<Want> {
     const wantDocRef = this.settings.firestore.client.doc(
       `${this.settings.firestore.collections.wants}/${wantId}`
     );
@@ -148,10 +229,6 @@ class WantsService {
         wantData.visibility = updateWantOptions.visibility;
       }
 
-      if (updateWantOptions.location) {
-        wantData.location = updateWantOptions.location;
-      }
-
       if (updateWantOptions.image) {
         const imageUrl = await this.uploadWantImage(
           wantId,
@@ -172,6 +249,18 @@ class WantsService {
     });
 
     return (await this.getWantById(wantId))!;
+  }
+
+  private async geocodeAddress(address: string) {
+    const geocodeAddressResponse =
+      await this.settings.googleMapsServicesClient.geocode({
+        params: {
+          address,
+          key: this.settings.googleApiKey,
+        },
+      });
+
+    return geocodeAddressResponse.data.results[0];
   }
 
   private async uploadWantImage(

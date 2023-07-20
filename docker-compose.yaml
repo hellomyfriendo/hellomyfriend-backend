@@ -5,7 +5,7 @@ services:
     ports:
       - ${PORT}:${PORT}
     environment:
-      - GOOGLE_CLOUD_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID}
+      - GOOGLE_PROJECT_ID=${GOOGLE_PROJECT_ID}
       - PORT=${PORT}
       - USERS_FIRESTORE_USERS_COLLECTION=${USERS_FIRESTORE_USERS_COLLECTION}
     depends_on:
@@ -16,7 +16,7 @@ services:
     ports:
       - 9200:9200
     environment:
-      - FIRESTORE_PROJECT_ID=${GOOGLE_CLOUD_PROJECT_ID}
+      - FIRESTORE_PROJECT_ID=${GOOGLE_PROJECT_ID}
       - PORT=9200
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://firestore_emulator:9200']

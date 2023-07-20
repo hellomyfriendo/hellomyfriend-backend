@@ -1,5 +1,4 @@
 import {WantImage} from './want-image';
-import {WantLocation} from './want-location';
 import {WantVisibility} from './want-visibility';
 
 interface Want {
@@ -9,7 +8,6 @@ interface Want {
   title: string;
   description?: string;
   visibility: WantVisibility;
-  location: WantLocation;
   image?: WantImage;
   createdAt: Date;
   updatedAt: Date;

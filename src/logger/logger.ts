@@ -4,8 +4,8 @@ import {config} from '../config';
 
 const logger = pino({
   ...getPinoOptions('gcp', {
-    name: config.googleCloud.cloudRun.service,
-    version: config.googleCloud.cloudRun.revision,
+    name: config.google.cloudRun.service,
+    version: config.google.cloudRun.revision,
   }),
   level: config.logLevel,
   redact: [
