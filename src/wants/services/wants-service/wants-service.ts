@@ -127,6 +127,8 @@ class WantsService {
 
       wantDocVisibility = {
         ...wantDocVisibility,
+        address: options.visibility.address,
+        radiusInMeters: options.visibility.radiusInMeters,
         googlePlaceId: geocodedAddress.place_id,
         location: geocodedAddress.geometry.location,
         geohash: geohashForLocation([
