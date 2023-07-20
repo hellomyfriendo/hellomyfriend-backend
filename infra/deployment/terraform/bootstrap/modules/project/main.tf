@@ -9,6 +9,7 @@ locals {
     "iam.googleapis.com",
     "run.googleapis.com",
     "secretmanager.googleapis.com",
+    "serviceusage.googleapis.com",
     "sourcerepo.googleapis.com"
   ]
 }
