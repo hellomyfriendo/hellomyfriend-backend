@@ -5,6 +5,7 @@ import cors from 'cors';
 import fileUpload from 'express-fileupload';
 import {Firestore} from '@google-cloud/firestore';
 import {Storage} from '@google-cloud/storage';
+import {Client} from '@googlemaps/google-maps-services-js';
 import {initializeApp} from 'firebase-admin/app';
 import * as firebaseAdmin from 'firebase-admin';
 import {logger} from './logger';
@@ -16,17 +17,19 @@ import {AuthService} from './auth';
 import {Auth} from './middleware';
 
 initializeApp({
-  projectId: config.googleCloud.projectId,
+  projectId: config.google.projectId,
 });
 
 const firestore = new Firestore({
-  projectId: config.googleCloud.projectId,
+  projectId: config.google.projectId,
   ignoreUndefinedProperties: true,
 });
 
 const storage = new Storage({
-  projectId: config.googleCloud.projectId,
+  projectId: config.google.projectId,
 });
+
+const googleMapsServicesClient = new Client({});
 
 const usersService = new UsersService({
   firestore: {
@@ -50,6 +53,8 @@ const wantsService = new WantsService({
       wantsImages: config.wants.storage.buckets.wantsImages,
     },
   },
+  googleMapsServicesClient,
+  googleApiKey: config.google.apiKey,
   usersService,
 });
 

@@ -1,4 +1,6 @@
 locals {
+  compute_sa_email = "${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+
   users_users_collection = "users"
 
   wants_wants_collection = "wants"
@@ -33,6 +35,40 @@ resource "google_storage_bucket_iam_member" "wants_images_all_users_reader" {
   member = "allUsers"
 }
 
+resource "google_apikeys_key" "backend" {
+  name         = "backend-api-key"
+  display_name = "Backend API Key"
+
+  restrictions {
+    api_targets {
+      service = "geocoding-backend.googleapis.com"
+    }
+  }
+}
+
+resource "google_secret_manager_secret" "api_key" {
+  secret_id = "backend-api-key"
+
+  replication {
+    user_managed {
+      replicas {
+        location = var.region
+      }
+    }
+  }
+}
+
+resource "google_secret_manager_secret_version" "api_key" {
+  secret      = google_secret_manager_secret.api_key.id
+  secret_data = google_apikeys_key.backend.key_string
+}
+
+resource "google_secret_manager_secret_iam_member" "api_key_compute_sa" {
+  secret_id = google_secret_manager_secret.api_key.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${local.compute_sa_email}"
+}
+
 resource "google_cloud_run_v2_service" "backend" {
   name     = "backend"
   location = var.region
@@ -43,7 +79,16 @@ resource "google_cloud_run_v2_service" "backend" {
       image = "${var.backend_image}@${data.docker_registry_image.backend.sha256_digest}"
 
       env {
-        name  = "GOOGLE_CLOUD_PROJECT_ID"
+        name = "GOOGLE_API_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.api_key.secret_id
+            version = "latest"
+          }
+        }
+      }
+      env {
+        name  = "GOOGLE_PROJECT_ID"
         value = var.project_id
       }
       env {
@@ -68,6 +113,10 @@ resource "google_cloud_run_v2_service" "backend" {
       }
     }
   }
+
+  depends_on = [
+    google_secret_manager_secret_iam_member.api_key_compute_sa
+  ]
 }
 
 resource "google_cloud_run_service_iam_member" "allow_unauthenticated" {

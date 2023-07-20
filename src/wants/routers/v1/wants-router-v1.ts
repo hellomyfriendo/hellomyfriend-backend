@@ -2,7 +2,7 @@ import * as express from 'express';
 import {celebrate, Joi, Segments} from 'celebrate';
 import {StatusCodes} from 'http-status-codes';
 import {WantsService} from '../../services';
-import {WantVisibility} from '../../models';
+import {WantVisibleTo} from '../../models';
 import {UnauthorizedError} from '../../../errors/unauthorized-error';
 import {ForbiddenError, NotFoundError} from '../../../errors';
 
@@ -23,20 +23,16 @@ class WantsRouterV1 {
           .keys({
             title: Joi.string().required(),
             description: Joi.string(),
-            visibility: Joi.alternatives()
-              .try(
-                Joi.string().valid(...Object.values(WantVisibility)),
-                Joi.array().items(Joi.string())
-              )
-              .required(),
-            location: Joi.alternatives()
-              .try(
-                Joi.object().keys({
-                  address: Joi.string().required(),
-                  radius: Joi.number().required(),
-                })
-              )
-              .required(),
+            visibility: Joi.object().keys({
+              visibleTo: Joi.alternatives()
+                .try(
+                  Joi.string().valid(...Object.values(WantVisibleTo)),
+                  Joi.array().items(Joi.string())
+                )
+                .required(),
+              address: Joi.string(),
+              radiusInMeters: Joi.number(),
+            }),
           })
           .required(),
       }),
@@ -50,14 +46,13 @@ class WantsRouterV1 {
             throw new UnauthorizedError('user not found in req');
           }
 
-          const {title, description, visibility, location} = req.body;
+          const {title, description, visibility} = req.body;
 
           const want = await this.settings.wantsService.createWant({
             creator: user.id,
             title,
             description,
             visibility,
-            location,
           });
 
           req.log.info(want, 'Want created!');

@@ -6,8 +6,10 @@ locals {
     "roles/datastore.owner",
     "roles/pubsub.admin",
     "roles/iam.serviceAccountUser",
-    "roles/run.admin",
     "roles/iam.serviceAccountAdmin",
+    "roles/serviceusage.apiKeysAdmin",
+    "roles/run.admin",
+    "roles/secretmanager.admin",
     "roles/storage.admin"
   ]
 

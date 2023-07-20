@@ -1,13 +1,17 @@
 locals {
   enable_apis = [
+    "apikeys.googleapis.com",
     "artifactregistry.googleapis.com",
     "cloudbuild.googleapis.com",
     "cloudresourcemanager.googleapis.com",
     "compute.googleapis.com",
     "firestore.googleapis.com",
+    "geocoding-backend.googleapis.com",
     "iam.googleapis.com",
+    "maps-backend.googleapis.com",
     "run.googleapis.com",
     "secretmanager.googleapis.com",
+    "serviceusage.googleapis.com",
     "sourcerepo.googleapis.com"
   ]
 }
