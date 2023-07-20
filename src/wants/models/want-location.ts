@@ -1,6 +1,6 @@
 interface WantLocationAddressRadius {
   address: string;
-  radius: number;
+  radiusInMeters: number;
 }
 
 type WantLocation = WantLocationAddressRadius;
