@@ -43,6 +43,9 @@ resource "google_apikeys_key" "backend" {
     api_targets {
       service = "geocoding-backend.googleapis.com"
     }
+    api_targets {
+      service = "maps-backend.googleapis.com"
+    }
   }
 }
 
