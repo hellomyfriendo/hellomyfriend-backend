@@ -108,35 +108,9 @@ class WantsService {
       throw new NotFoundError(`Creator id ${options.creator} not found`);
     }
 
-    let wantDocVisibility: WantDocVisibility = {
-      visibleTo: options.visibility.visibleTo,
-    };
-
-    if (options.visibility.address || options.visibility.radiusInMeters) {
-      if (!options.visibility.address) {
-        throw new RangeError('Address is required when radiusInMeters is set');
-      }
-
-      if (!options.visibility.address) {
-        throw new RangeError('Address is required when radiusInMeters is set');
-      }
-
-      const geocodedAddress = await this.geocodeAddress(
-        options.visibility.address
-      );
-
-      wantDocVisibility = {
-        ...wantDocVisibility,
-        address: options.visibility.address,
-        radiusInMeters: options.visibility.radiusInMeters,
-        googlePlaceId: geocodedAddress.place_id,
-        location: geocodedAddress.geometry.location,
-        geohash: geohashForLocation([
-          geocodedAddress.geometry.location.lat,
-          geocodedAddress.geometry.location.lng,
-        ]),
-      };
-    }
+    const wantDocVisibility = await this.getWantDocVisibility(
+      options.visibility
+    );
 
     const now = new Date();
 
@@ -228,7 +202,9 @@ class WantsService {
       }
 
       if (updateWantOptions.visibility) {
-        wantData.visibility = updateWantOptions.visibility;
+        wantData.visibility = await this.getWantDocVisibility(
+          updateWantOptions.visibility
+        );
       }
 
       if (updateWantOptions.image) {
@@ -251,6 +227,40 @@ class WantsService {
     });
 
     return (await this.getWantById(wantId))!;
+  }
+
+  private async getWantDocVisibility(
+    visibility: WantDocVisibility
+  ): Promise<WantDocVisibility> {
+    let wantDocVisibility: WantDocVisibility = {
+      visibleTo: visibility.visibleTo,
+    };
+
+    if (visibility.address || visibility.radiusInMeters) {
+      if (!visibility.address) {
+        throw new RangeError('address is required when radiusInMeters is set');
+      }
+
+      if (!visibility.radiusInMeters) {
+        throw new RangeError('radiusInMeters is required when address is set');
+      }
+
+      const geocodedAddress = await this.geocodeAddress(visibility.address);
+
+      wantDocVisibility = {
+        ...wantDocVisibility,
+        address: visibility.address,
+        radiusInMeters: visibility.radiusInMeters,
+        googlePlaceId: geocodedAddress.place_id,
+        location: geocodedAddress.geometry.location,
+        geohash: geohashForLocation([
+          geocodedAddress.geometry.location.lat,
+          geocodedAddress.geometry.location.lng,
+        ]),
+      };
+    }
+
+    return wantDocVisibility;
   }
 
   private async geocodeAddress(address: string) {
