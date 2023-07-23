@@ -5,6 +5,7 @@ interface Want {
   id: string;
   creator: string;
   admins: string[];
+  members: string[];
   title: string;
   description?: string;
   visibility: WantVisibility;

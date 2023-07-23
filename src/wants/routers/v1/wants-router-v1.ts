@@ -30,8 +30,10 @@ class WantsRouterV1 {
                   Joi.array().items(Joi.string())
                 )
                 .required(),
-              address: Joi.string(),
-              radiusInMeters: Joi.number(),
+              location: Joi.object().keys({
+                address: Joi.string().required(),
+                radiusInMeters: Joi.number().required(),
+              }),
             }),
           })
           .required(),

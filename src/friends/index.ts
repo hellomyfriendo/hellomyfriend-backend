@@ -1,0 +1,1 @@
+export {FriendsService} from './services';

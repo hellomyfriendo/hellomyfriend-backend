@@ -8,13 +8,14 @@ import {Storage} from '@google-cloud/storage';
 import {Client} from '@googlemaps/google-maps-services-js';
 import {initializeApp} from 'firebase-admin/app';
 import * as firebaseAdmin from 'firebase-admin';
-import {logger} from './logger';
+import {AuthService} from './auth';
+import {FriendsService} from './friends';
 import {UsersService} from './users';
+import {WantsRouterV1, WantsService} from './wants';
+import {Auth} from './middleware';
+import {logger} from './logger';
 import {errorHandler} from './error-handler';
 import {config} from './config';
-import {WantsRouterV1, WantsService} from './wants';
-import {AuthService} from './auth';
-import {Auth} from './middleware';
 
 initializeApp({
   projectId: config.google.projectId,
@@ -40,6 +41,8 @@ const usersService = new UsersService({
   },
 });
 
+const friendsService = new FriendsService();
+
 const wantsService = new WantsService({
   firestore: {
     client: firestore,
@@ -55,6 +58,7 @@ const wantsService = new WantsService({
   },
   googleMapsServicesClient,
   googleApiKey: config.google.apiKey,
+  friendsService,
   usersService,
 });
 
