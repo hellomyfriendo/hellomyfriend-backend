@@ -35,15 +35,16 @@ interface WantDocVisibility {
 
 interface WantDoc {
   id: string;
-  creator: string;
-  admins: string[];
-  members: string[];
+  creatorId: string;
+  adminsIds: string[];
+  membersIds: string[];
   title: string;
   description?: string;
   visibility: WantDocVisibility;
   image?: WantImage;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt: Date | null;
 }
 
 const wantDocConverter: FirestoreDataConverter<WantDoc> = {
@@ -61,15 +62,16 @@ const wantDocConverter: FirestoreDataConverter<WantDoc> = {
 
     return {
       id: snapshot.id,
-      creator: data.creator,
-      admins: data.admins,
-      members: data.members,
+      creatorId: data.creatorId,
+      adminsIds: data.adminsIds,
+      membersIds: data.membersIds,
       title: data.title,
       description: data.description,
       visibility: data.visibility,
       image: data.image,
       createdAt: data.createdAt.toDate(),
       updatedAt: data.updatedAt.toDate(),
+      deletedAt: data.deletedAt?.toDate(),
     };
   },
 };
@@ -106,7 +108,8 @@ interface GetHomeWantsFeedOptions {
 }
 
 interface UpdateWantOptions {
-  admins?: string[];
+  adminsIds?: string[];
+  membersIds?: string[];
   title?: string;
   description?: string;
   visibility?: WantVisibility;
@@ -144,6 +147,7 @@ class WantsService {
         visibility: wantDocVisibility,
         createdAt: Timestamp.fromDate(now),
         updatedAt: Timestamp.fromDate(now),
+        deletedAt: null,
       });
 
     const want = await this.getWantById(wantDocRef.id);
@@ -169,6 +173,10 @@ class WantsService {
       return;
     }
 
+    if (wantDocData.deletedAt) {
+      return;
+    }
+
     return this.toWant(wantDocData);
   }
 
@@ -188,13 +196,21 @@ class WantsService {
       throw new NotFoundError(`Want ${wantId} not found`);
     }
 
+    if (wantData.deletedAt()) {
+      throw new NotFoundError(`Want ${wantId} not found`);
+    }
+
     if (!Object.values(updateWantOptions).some(option => option)) {
       return (await this.getWantById(wantId))!;
     }
 
     await this.settings.firestore.client.runTransaction(async t => {
-      if (updateWantOptions.admins) {
-        wantData.admins = updateWantOptions.admins;
+      if (updateWantOptions.adminsIds) {
+        wantData.adminsIds = updateWantOptions.adminsIds;
+      }
+
+      if (updateWantOptions.membersIds) {
+        wantData.membersIds = updateWantOptions.membersIds;
       }
 
       if (updateWantOptions.title) {
@@ -233,41 +249,6 @@ class WantsService {
     return (await this.getWantById(wantId))!;
   }
 
-  private async getWantDocVisibility(
-    visibility: WantVisibility
-  ): Promise<WantDocVisibility> {
-    let wantDocVisibility: WantDocVisibility = {
-      visibleTo: visibility.visibleTo,
-    };
-
-    if (visibility.location) {
-      const geocodedAddress = await this.geocodeAddress(
-        visibility.location.address
-      );
-
-      wantDocVisibility = {
-        ...wantDocVisibility,
-        location: {
-          address: visibility.location.address,
-          radiusInMeters: visibility.location.radiusInMeters,
-          googlePlaceId: geocodedAddress.place_id,
-          geometry: {
-            coordinates: {
-              latitude: geocodedAddress.geometry.location.lat,
-              longitude: geocodedAddress.geometry.location.lng,
-            },
-            geohash: geohashForLocation([
-              geocodedAddress.geometry.location.lat,
-              geocodedAddress.geometry.location.lng,
-            ]),
-          },
-        },
-      };
-    }
-
-    return wantDocVisibility;
-  }
-
   async getHomeWantsFeed(options: GetHomeWantsFeedOptions): Promise<Want[]> {
     // TODO(Marcus): iterate and optimize this, performance and user experience wise.
 
@@ -277,7 +258,8 @@ class WantsService {
 
       const wantsDocsSnapshots = await this.settings.firestore.client
         .collection(this.settings.firestore.collections.wants)
-        .where('creator', 'in', userFriends)
+        .where('deletedAt', '==', null)
+        .where('creatorId', 'in', userFriends)
         .where('visibility', '==', 'friends')
         .withConverter(wantDocConverter)
         .get();
@@ -288,6 +270,7 @@ class WantsService {
     const listUserTargetedWantsDocs = async (userId: string) => {
       const wantsSnapshot = await this.settings.firestore.client
         .collection(this.settings.firestore.collections.wants)
+        .where('deletedAt', '==', null)
         .where('visibility', 'array-contains', userId)
         .withConverter(wantDocConverter)
         .get();
@@ -298,6 +281,7 @@ class WantsService {
     const listPublicWantsDocs = async () => {
       const wantsSnapshot = await this.settings.firestore.client
         .collection(this.settings.firestore.collections.wants)
+        .where('deletedAt', '==', null)
         .where('visibility', '==', 'public')
         .withConverter(wantDocConverter)
         .get();
@@ -340,7 +324,7 @@ class WantsService {
       };
 
       const calculateMembersCountScore = (want: WantDoc) => {
-        const membersCount = want.members.length;
+        const membersCount = want.membersIds.length;
 
         if (membersCount > 4) {
           return -0.25;
@@ -427,9 +411,9 @@ class WantsService {
   private toWant(wantDoc: WantDoc) {
     const want: Want = {
       id: wantDoc.id,
-      creator: wantDoc.creator,
-      admins: wantDoc.admins,
-      members: wantDoc.members,
+      creatorId: wantDoc.creatorId,
+      adminsIds: wantDoc.adminsIds,
+      membersIds: wantDoc.membersIds,
       title: wantDoc.title,
       description: wantDoc.description,
       visibility: {
@@ -448,6 +432,41 @@ class WantsService {
     }
 
     return want;
+  }
+
+  private async getWantDocVisibility(
+    visibility: WantVisibility
+  ): Promise<WantDocVisibility> {
+    let wantDocVisibility: WantDocVisibility = {
+      visibleTo: visibility.visibleTo,
+    };
+
+    if (visibility.location) {
+      const geocodedAddress = await this.geocodeAddress(
+        visibility.location.address
+      );
+
+      wantDocVisibility = {
+        ...wantDocVisibility,
+        location: {
+          address: visibility.location.address,
+          radiusInMeters: visibility.location.radiusInMeters,
+          googlePlaceId: geocodedAddress.place_id,
+          geometry: {
+            coordinates: {
+              latitude: geocodedAddress.geometry.location.lat,
+              longitude: geocodedAddress.geometry.location.lng,
+            },
+            geohash: geohashForLocation([
+              geocodedAddress.geometry.location.lat,
+              geocodedAddress.geometry.location.lng,
+            ]),
+          },
+        },
+      };
+    }
+
+    return wantDocVisibility;
   }
 
   private async geocodeAddress(address: string) {

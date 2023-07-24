@@ -41,7 +41,16 @@ const usersService = new UsersService({
   },
 });
 
-const friendsService = new FriendsService();
+const friendsService = new FriendsService({
+  firestore: {
+    client: firestore,
+    collections: {
+      friendRequests: config.friends.firestore.collections.friendRequests,
+      follows: config.friends.firestore.collections.follows,
+    },
+  },
+  usersService,
+});
 
 const wantsService = new WantsService({
   firestore: {

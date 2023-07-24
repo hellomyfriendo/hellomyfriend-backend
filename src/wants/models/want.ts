@@ -3,15 +3,16 @@ import {WantVisibility} from './want-visibility';
 
 interface Want {
   id: string;
-  creator: string;
-  admins: string[];
-  members: string[];
+  creatorId: string;
+  adminsIds: string[];
+  membersIds: string[];
   title: string;
   description?: string;
   visibility: WantVisibility;
   image?: WantImage;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date;
 }
 
 export {Want};

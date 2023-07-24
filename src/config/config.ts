@@ -8,6 +8,8 @@ const envVarsSchema = Joi.object()
     PORT: Joi.number().integer().required(),
     K_REVISION: Joi.string().required(),
     K_SERVICE: Joi.string().required(),
+    FRIENDS_FIRESTORE_FOLLOWS_COLLECTION: Joi.string().required(),
+    FRIENDS_FIRESTORE_FRIEND_REQUESTS_COLLECTION: Joi.string().required(),
     USERS_FIRESTORE_USERS_COLLECTION: Joi.string().required(),
     WANTS_FIRESTORE_WANTS_COLLECTION: Joi.string().required(),
     WANTS_STORAGE_WANTS_IMAGES_BUCKET: Joi.string().required(),
@@ -31,6 +33,14 @@ const config = {
   },
   logLevel: envVars.LOG_LEVEL,
   port: envVars.PORT,
+  friends: {
+    firestore: {
+      collections: {
+        follows: envVars.FRIENDS_FIRESTORE_FOLLOWS_COLLECTION,
+        friendRequests: envVars.FRIENDS_FIRESTORE_FRIEND_REQUESTS_COLLECTION,
+      },
+    },
+  },
   users: {
     firestore: {
       collections: {

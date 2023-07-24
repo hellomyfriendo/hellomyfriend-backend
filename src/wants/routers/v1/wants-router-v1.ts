@@ -45,7 +45,7 @@ class WantsRouterV1 {
           const user = req.user;
 
           if (!user) {
-            throw new UnauthorizedError('user not found in req');
+            throw new UnauthorizedError('User not found in req');
           }
 
           const {title, description, visibility} = req.body;
@@ -87,7 +87,7 @@ class WantsRouterV1 {
           throw new NotFoundError(`Want ${wantId} not found`);
         }
 
-        if (!want.admins.includes(user.id)) {
+        if (!want.adminsIds.includes(user.id)) {
           throw new ForbiddenError(
             `User ${user.id} cannot update Want ${want.id}`
           );

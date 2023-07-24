@@ -1,6 +1,9 @@
 locals {
   compute_sa_email = "${data.google_project.project.number}-compute@developer.gserviceaccount.com"
 
+  friends_follows_collection         = "follows"
+  friends_friend_requests_collection = "friend-requests"
+
   users_users_collection = "users"
 
   wants_wants_collection = "wants"
@@ -98,6 +101,14 @@ resource "google_cloud_run_v2_service" "backend" {
       env {
         name  = "NODE_ENV"
         value = "production"
+      }
+      env {
+        name  = "FRIENDS_FIRESTORE_FOLLOWS_COLLECTION"
+        value = local.friends_follows_collection
+      }
+      env {
+        name  = "FRIENDS_FIRESTORE_FRIEND_REQUESTS_COLLECTION"
+        value = local.friends_friend_requests_collection
       }
       env {
         name  = "USERS_FIRESTORE_USERS_COLLECTION"
