@@ -102,8 +102,7 @@ interface CreateWantOptions {
 
 interface GetHomeWantsFeedOptions {
   userId: string;
-  pageNumber: 0;
-  coordinates?: GeolocationCoordinates;
+  geolocationCoordinates?: GeolocationCoordinates;
 }
 
 interface UpdateWantOptions {
@@ -418,9 +417,9 @@ class WantsService {
     const wantsFeed = orderBy(relevantWants, wantDoc =>
       calculateFeedScore({
         wantDoc,
-        userGeolocationCoordinates: options.coordinates,
+        userGeolocationCoordinates: options.geolocationCoordinates,
       })
-    );
+    ).map(this.toWant);
 
     return wantsFeed;
   }

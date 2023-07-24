@@ -2,7 +2,7 @@ import * as express from 'express';
 import {celebrate, Joi, Segments} from 'celebrate';
 import {StatusCodes} from 'http-status-codes';
 import {WantsService} from '../../services';
-import {WantVisibleTo} from '../../models';
+import {GeolocationCoordinates, WantVisibleTo} from '../../models';
 import {UnauthorizedError} from '../../../errors/unauthorized-error';
 import {ForbiddenError, NotFoundError} from '../../../errors';
 
@@ -128,6 +128,61 @@ class WantsRouterV1 {
         return next(err);
       }
     });
+
+    router.get(
+      '/home-feed',
+      celebrate({
+        [Segments.QUERY]: Joi.object()
+          .keys({
+            latitude: Joi.number()
+              .min(GeolocationCoordinates.minLatitude)
+              .max(GeolocationCoordinates.maxLatitude),
+            longitude: Joi.number()
+              .min(GeolocationCoordinates.minLongitude)
+              .max(GeolocationCoordinates.maxLongitude),
+          })
+          .required(),
+      }),
+      async (req, res, next) => {
+        try {
+          const user = req.user;
+
+          if (!user) {
+            throw new UnauthorizedError('User not found in the request');
+          }
+
+          let geolocationCoordinates;
+
+          if (req.query.latitude || req.query.longitude) {
+            if (!req.query.latitude) {
+              throw new RangeError(
+                'latitude is required when longitude is set'
+              );
+            }
+
+            if (!req.query.longitude) {
+              throw new RangeError(
+                'longitude is required when latitude is set'
+              );
+            }
+
+            geolocationCoordinates = new GeolocationCoordinates(
+              Number.parseFloat(req.query.latitude as string),
+              Number.parseFloat(req.query.longitude as string)
+            );
+          }
+
+          const wantsFeed = await this.settings.wantsService.getHomeWantsFeed({
+            userId: user.id,
+            geolocationCoordinates,
+          });
+
+          return res.json(wantsFeed);
+        } catch (err) {
+          return next(err);
+        }
+      }
+    );
 
     return router;
   }
