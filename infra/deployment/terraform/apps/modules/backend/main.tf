@@ -123,6 +123,10 @@ resource "google_cloud_run_v2_service" "backend" {
         value = google_storage_bucket.wants_images.name
       }
     }
+
+    vpc_access {
+      egress = "PRIVATE_RANGES_ONLY"
+    }
   }
 
   depends_on = [

@@ -2,7 +2,8 @@ locals {
   cloudbuild_sa_email = "${data.google_project.project.number}@cloudbuild.gserviceaccount.com"
 
   cloudbuild_sa_roles = [
-    "roles/editor", # Only Editor allows the creation of monitoring alerts. See https://github.com/hashicorp/terraform-provider-google/issues/11603
+    "roles/editor", # Only Editor allows the creation of monitoring alerts. See https://github.com/hashicorp/terraform-provider-google/issues/11603,
+    "roles/secretmanager.admin"
   ]
 }
 
