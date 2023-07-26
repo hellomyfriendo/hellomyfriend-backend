@@ -33,11 +33,13 @@ module "firestore" {
 module "apps" {
   source = "./modules/apps"
 
-  project_id      = var.project_id
-  region          = var.region
-  sourcerepo_name = var.sourcerepo_name
-  branch_name     = var.branch_name
-  tfstate_bucket  = module.project.tfstate_bucket
+  project_id                    = var.project_id
+  region                        = var.region
+  backend_service_account_email = module.iam.backend_service_account_email
+  alerting_emails               = var.alerting_emails
+  sourcerepo_name               = var.sourcerepo_name
+  branch_name                   = var.branch_name
+  tfstate_bucket                = module.project.tfstate_bucket
 }
 
 # tfvars secret

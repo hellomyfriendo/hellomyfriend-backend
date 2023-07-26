@@ -2,6 +2,7 @@ locals {
   enable_apis = [
     "apikeys.googleapis.com",
     "artifactregistry.googleapis.com",
+    "cloudasset.googleapis.com",
     "cloudbuild.googleapis.com",
     "cloudresourcemanager.googleapis.com",
     "compute.googleapis.com",

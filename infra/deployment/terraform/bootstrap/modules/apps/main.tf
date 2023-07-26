@@ -40,8 +40,10 @@ resource "google_cloudbuild_trigger" "apps" {
   filename = "infra/deployment/cloudbuild/apps/cloudbuild.yaml"
 
   substitutions = {
-    _BACKEND_IMAGE  = local.backend_image
-    _REGION         = var.region
-    _TFSTATE_BUCKET = var.tfstate_bucket
+    _REGION                        = var.region
+    _BACKEND_IMAGE                 = local.backend_image
+    _BACKEND_SERVICE_ACCOUNT_EMAIL = var.backend_service_account_email
+    _ALERTING_EMAILS               = join(",", var.alerting_emails)
+    _TFSTATE_BUCKET                = var.tfstate_bucket
   }
 }

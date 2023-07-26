@@ -1,6 +1,4 @@
 locals {
-  compute_sa_email = "${data.google_project.project.number}-compute@developer.gserviceaccount.com"
-
   friends_follows_collection         = "follows"
   friends_friend_requests_collection = "friend-requests"
 
@@ -66,18 +64,20 @@ resource "google_secret_manager_secret_version" "api_key" {
   secret_data = google_apikeys_key.backend.key_string
 }
 
-resource "google_secret_manager_secret_iam_member" "api_key_compute_sa" {
+resource "google_secret_manager_secret_iam_member" "api_key_backend_sa" {
   secret_id = google_secret_manager_secret.api_key.secret_id
   role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${local.compute_sa_email}"
+  member    = "serviceAccount:${var.backend_service_account_email}"
 }
 
 resource "google_cloud_run_v2_service" "backend" {
   name     = "backend"
   location = var.region
-  ingress  = "INGRESS_TRAFFIC_ALL"
+  ingress  = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
 
   template {
+    service_account = var.backend_service_account_email
+
     containers {
       image = "${var.backend_image}@${data.docker_registry_image.backend.sha256_digest}"
 
