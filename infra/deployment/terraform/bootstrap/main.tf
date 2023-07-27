@@ -37,6 +37,7 @@ module "apps" {
   region                        = var.region
   backend_service_account_email = module.iam.backend_service_account_email
   alerting_emails               = var.alerting_emails
+  domain_name                   = var.domain_name
   sourcerepo_name               = var.sourcerepo_name
   branch_name                   = var.branch_name
   tfstate_bucket                = module.project.tfstate_bucket

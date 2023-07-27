@@ -43,6 +43,7 @@ resource "google_cloudbuild_trigger" "apps" {
     _REGION                        = var.region
     _BACKEND_IMAGE                 = local.backend_image
     _BACKEND_SERVICE_ACCOUNT_EMAIL = var.backend_service_account_email
+    _DOMAIN_NAME                   = var.domain_name
     _ALERTING_EMAILS               = join(",", var.alerting_emails)
     _TFSTATE_BUCKET                = var.tfstate_bucket
   }

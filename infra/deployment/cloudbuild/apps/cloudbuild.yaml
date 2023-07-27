@@ -25,4 +25,5 @@ steps:
       - 'TF_VAR_region=${_REGION}'
       - 'TF_VAR_backend_image=${_BACKEND_IMAGE}'
       - 'TF_VAR_backend_service_account_email=${_BACKEND_SERVICE_ACCOUNT_EMAIL}'
+      - 'TF_VAR_domain_name=${_DOMAIN_NAME}'
       - 'TF_VAR_alerting_emails=${_ALERTING_EMAILS}'

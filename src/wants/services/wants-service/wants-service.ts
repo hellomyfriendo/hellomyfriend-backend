@@ -509,7 +509,7 @@ class WantsService {
       );
     }
 
-    const fileName = `${wantId}.${mime.extension(image.mimeType)}`;
+    const fileName = `images/${wantId}.${mime.extension(image.mimeType)}`;
 
     const gcsFile = this.settings.storage.client
       .bucket(this.settings.storage.buckets.wantsImages)

@@ -13,6 +13,11 @@ variable "backend_service_account_email" {
   description = "The email of the backend service account."
 }
 
+variable "domain_name" {
+  type        = string
+  description = "The domain name."
+}
+
 variable "alerting_emails" {
   type        = list(string)
   description = "Email addresses that will receive monitoring alerts."
