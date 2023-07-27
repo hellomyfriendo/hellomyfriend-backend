@@ -141,12 +141,10 @@ resource "google_compute_region_network_endpoint_group" "backend" {
   }
 }
 
-resource "google_compute_region_backend_service" "backend" {
-  name                  = "backend"
-  load_balancing_scheme = "INTERNAL_MANAGED"
+resource "google_compute_backend_service" "backend" {
+  name = "backend"
   backend {
-    group          = google_compute_region_network_endpoint_group.backend.id
-    balancing_mode = "UTILIZATION"
+    group = google_compute_region_network_endpoint_group.backend.id
   }
 }
 
@@ -174,7 +172,7 @@ resource "google_compute_backend_bucket" "wants_assets_cdn" {
 resource "google_compute_url_map" "backend" {
   name = "backend"
   # TODO(Marcus): Create not found pages 
-  default_service = google_compute_region_backend_service.backend.id
+  default_service = google_compute_backend_service.backend.id
   host_rule {
     path_matcher = "backend"
     hosts = [
@@ -183,7 +181,7 @@ resource "google_compute_url_map" "backend" {
   }
   path_matcher {
     name            = "backend"
-    default_service = google_compute_region_backend_service.backend.id
+    default_service = google_compute_backend_service.backend.id
     path_rule {
       paths = [
         "/assets/wants",
