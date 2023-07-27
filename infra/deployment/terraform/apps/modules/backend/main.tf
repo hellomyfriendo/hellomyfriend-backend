@@ -197,7 +197,7 @@ module "external_https_lb" {
   version = "~> 9.0"
 
   project = var.project_id
-  name    = "external-https-lb"
+  name    = google_compute_url_map.backend.name
 
   ssl                             = true
   managed_ssl_certificate_domains = [var.domain_name]
