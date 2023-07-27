@@ -9,12 +9,6 @@ locals {
   users_users_collection = "users"
 
   wants_wants_collection = "wants"
-
-  cloud_cdn_service_account_email = "service-${data.google_project.project.number}@cloud-cdn-fill.iam.gserviceaccount.com"
-
-  cloud_cdn_sa_bucket_roles = [
-    "roles/storage.objectViewer",
-  ]
 }
 
 data "google_project" "project" {
@@ -165,84 +159,16 @@ resource "google_compute_backend_service" "backend" {
   }
 }
 
-resource "google_compute_backend_bucket" "wants_assets_cdn" {
-  name        = "wants-assets-cdn"
-  description = "Contains Wants-related static resources"
-  bucket_name = google_storage_bucket.wants_assets.name
-  enable_cdn  = true
-  cdn_policy {
-    cache_mode        = "CACHE_ALL_STATIC"
-    client_ttl        = 3600
-    default_ttl       = 3600
-    max_ttl           = 86400
-    negative_caching  = true
-    serve_while_stale = 86400
-  }
-  custom_response_headers = [
-    "X-Cache-ID: {cdn_cache_id}",
-    "X-Cache-Hit: {cdn_cache_status}",
-    "X-Client-Location: {client_region_subdivision}, {client_city}",
-    "X-Client-IP-Address: {client_ip_address}"
-  ]
-}
-
-resource "google_compute_url_map" "backend" {
-  name = "backend"
-  # TODO(Marcus): Create not found pages 
-  default_service = google_compute_backend_service.backend.id
-  host_rule {
-    path_matcher = "backend"
-    hosts = [
-      "*",
-    ]
-  }
-  path_matcher {
-    name            = "backend"
-    default_service = google_compute_backend_service.backend.id
-    path_rule {
-      paths = [
-        "/assets/wants",
-        "/assets/wants/*",
-      ]
-      service = google_compute_backend_bucket.wants_assets_cdn.id
-    }
-  }
-}
-
-resource "random_id" "wants_assets_cdn_key_url_signature" {
-  byte_length = 16
-}
-
-resource "google_compute_backend_bucket_signed_url_key" "wants_assets_cdn" {
-  name           = "wants-assets-key"
-  key_value      = random_id.wants_assets_cdn_key_url_signature.b64_url
-  backend_bucket = google_compute_backend_bucket.wants_assets_cdn.name
-}
-
-resource "google_storage_bucket_iam_member" "wants_assets_cloud_cdn_sa" {
-  for_each = toset(local.cloud_cdn_sa_bucket_roles)
-  bucket   = google_storage_bucket.wants_assets.name
-  role     = each.value
-  member   = "serviceAccount:${local.cloud_cdn_service_account_email}"
-
-  depends_on = [
-    google_compute_backend_bucket_signed_url_key.wants_assets_cdn
-  ]
-}
-
 module "external_https_lb" {
   source  = "GoogleCloudPlatform/lb-http/google//modules/serverless_negs"
   version = "~> 9.0"
 
   project = var.project_id
-  name    = google_compute_url_map.backend.name
+  name    = "backend"
 
   ssl                             = true
   managed_ssl_certificate_domains = [var.domain_name]
   https_redirect                  = true
-
-  url_map        = google_compute_url_map.backend.id
-  create_url_map = false
 
   backends = {
     default = {

@@ -45,6 +45,7 @@ resource "google_project_iam_custom_role" "backend" {
     "datastore.namespaces.list",
     "datastore.statistics.get",
     "datastore.statistics.list",
+    "iam.serviceAccounts.signBlob",
     "resourcemanager.projects.get",
   ]
 }
