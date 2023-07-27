@@ -1,16 +1,16 @@
 steps:
   # backend
-  - name: 'gcr.io/cloud-builders/docker'
-    id: backend-docker-build
-    args:
-      - 'build'
-      - '--tag=${_BACKEND_IMAGE}'
-      - '.'
-  - name: 'gcr.io/cloud-builders/docker'
-    id: backend-docker-push
-    args:
-      - 'push'
-      - '${_BACKEND_IMAGE}'
+  # - name: 'gcr.io/cloud-builders/docker'
+  #   id: backend-docker-build
+  #   args:
+  #     - 'build'
+  #     - '--tag=${_BACKEND_IMAGE}'
+  #     - '.'
+  # - name: 'gcr.io/cloud-builders/docker'
+  #   id: backend-docker-push
+  #   args:
+  #     - 'push'
+  #     - '${_BACKEND_IMAGE}'
   # apps
   - name: 'hashicorp/terraform'
     id: terraform-apply-apps

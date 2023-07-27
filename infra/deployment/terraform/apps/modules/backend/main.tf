@@ -214,7 +214,6 @@ module "external_https_lb" {
 
       groups = [
         {
-          # Your serverless service should have a NEG created that's referenced here.
           group = google_compute_region_network_endpoint_group.backend.id
         }
       ]
@@ -222,6 +221,10 @@ module "external_https_lb" {
       log_config = {
         enable      = true
         sample_rate = 1.0
+      }
+
+      iap_config = {
+        enable = false
       }
     }
   }
