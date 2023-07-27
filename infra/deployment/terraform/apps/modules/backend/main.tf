@@ -1,4 +1,9 @@
 locals {
+  backend_sa_bucket_roles = [
+    "roles/storage.legacyObjectReader",
+    "roles/storage.legacyBucketWriter"
+  ]
+
   friends_follows_collection         = "follows"
   friends_friend_requests_collection = "friend-requests"
 
@@ -27,6 +32,13 @@ resource "google_storage_bucket" "wants_assets" {
   force_destroy = true
 
   uniform_bucket_level_access = true
+}
+
+resource "google_storage_bucket_iam_member" "wants_assets_backend_sa" {
+  for_each = toset(local.backend_sa_bucket_roles)
+  bucket   = google_storage_bucket.wants_assets.name
+  role     = each.value
+  member   = "serviceAccount:${var.backend_service_account_email}"
 }
 
 resource "google_apikeys_key" "backend" {
