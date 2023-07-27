@@ -62,7 +62,7 @@ const wantsService = new WantsService({
   storage: {
     client: storage,
     buckets: {
-      wantsImages: config.wants.storage.buckets.wantsImages,
+      wantsAssets: config.wants.storage.buckets.wantsAssets,
     },
   },
   googleMapsServicesClient,

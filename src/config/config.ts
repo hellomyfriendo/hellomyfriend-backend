@@ -12,7 +12,7 @@ const envVarsSchema = Joi.object()
     FRIENDS_FIRESTORE_FRIEND_REQUESTS_COLLECTION: Joi.string().required(),
     USERS_FIRESTORE_USERS_COLLECTION: Joi.string().required(),
     WANTS_FIRESTORE_WANTS_COLLECTION: Joi.string().required(),
-    WANTS_STORAGE_WANTS_IMAGES_BUCKET: Joi.string().required(),
+    WANTS_STORAGE_WANTS_ASSETS_BUCKET: Joi.string().required(),
   })
   .unknown();
 
@@ -56,7 +56,7 @@ const config = {
     },
     storage: {
       buckets: {
-        wantsImages: envVars.WANTS_STORAGE_WANTS_IMAGES_BUCKET,
+        wantsAssets: envVars.WANTS_STORAGE_WANTS_ASSETS_BUCKET,
       },
     },
   },

@@ -86,7 +86,7 @@ interface WantsServiceSettings {
   storage: {
     client: Storage;
     buckets: {
-      wantsImages: string;
+      wantsAssets: string;
     };
   };
   googleApiKey: string;
@@ -512,7 +512,7 @@ class WantsService {
     const fileName = `images/${wantId}.${mime.extension(image.mimeType)}`;
 
     const gcsFile = this.settings.storage.client
-      .bucket(this.settings.storage.buckets.wantsImages)
+      .bucket(this.settings.storage.buckets.wantsAssets)
       .file(fileName);
 
     await gcsFile.save(image.data);

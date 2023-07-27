@@ -112,8 +112,8 @@ resource "google_cloud_run_v2_service" "backend" {
         value = local.wants_wants_collection
       }
       env {
-        name  = "WANTS_STORAGE_WANTS_IMAGES_BUCKET"
-        value = google_storage_bucket.wants_images.name
+        name  = "WANTS_STORAGE_WANTS_ASSETS_BUCKET"
+        value = google_storage_bucket.wants_assets.name
       }
     }
   }
