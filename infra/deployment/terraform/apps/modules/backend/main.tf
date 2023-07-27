@@ -1,7 +1,6 @@
 locals {
   backend_sa_bucket_roles = [
-    "roles/storage.legacyObjectReader",
-    "roles/storage.legacyBucketWriter"
+    "roles/storage.objectAdmin",
   ]
 
   friends_follows_collection         = "follows"
@@ -10,6 +9,12 @@ locals {
   users_users_collection = "users"
 
   wants_wants_collection = "wants"
+
+  cloud_cdn_service_account_email = "service-${data.google_project.project.number}@cloud-cdn-fill.iam.gserviceaccount.com"
+
+  cloud_cdn_sa_bucket_roles = [
+    "roles/storage.objectViewer",
+  ]
 }
 
 data "google_project" "project" {
@@ -39,6 +44,13 @@ resource "google_storage_bucket_iam_member" "wants_assets_backend_sa" {
   bucket   = google_storage_bucket.wants_assets.name
   role     = each.value
   member   = "serviceAccount:${var.backend_service_account_email}"
+}
+
+resource "google_storage_bucket_iam_member" "wants_assets_cloud_cdn_sa" {
+  for_each = toset(local.cloud_cdn_sa_bucket_roles)
+  bucket   = google_storage_bucket.wants_assets.name
+  role     = each.value
+  member   = "serviceAccount:${local.cloud_cdn_service_account_email}"
 }
 
 resource "google_apikeys_key" "backend" {

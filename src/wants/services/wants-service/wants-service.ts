@@ -12,7 +12,6 @@ import mime from 'mime-types';
 import {
   GeolocationCoordinates,
   Want,
-  WantImage,
   WantVisibility,
   WantVisibleTo,
 } from '../../models';
@@ -33,6 +32,13 @@ interface WantDocVisibility {
   };
 }
 
+interface WantDocImage {
+  gcs: {
+    bucket: string;
+    fileName: string;
+  };
+}
+
 interface WantDoc {
   id: string;
   creatorId: string;
@@ -41,7 +47,7 @@ interface WantDoc {
   title: string;
   description: string | null;
   visibility: WantDocVisibility;
-  image: WantImage | null;
+  image: WantDocImage | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -230,16 +236,12 @@ class WantsService {
       }
 
       if (updateWantOptions.image) {
-        const imageUrl = await this.uploadWantImage(
+        const wantDocImage = await this.uploadWantImage(
           wantId,
           updateWantOptions.image
         );
 
-        const wantImage: WantImage = {
-          url: imageUrl,
-        };
-
-        wantData.image = wantImage;
+        wantData.image = wantDocImage;
       }
 
       t.update(wantDocRef, {
@@ -400,17 +402,19 @@ class WantsService {
       ...publicWants,
     ];
 
-    const wantsFeed = orderBy(relevantWants, wantDoc =>
+    const orderedRelevantWants = orderBy(relevantWants, wantDoc =>
       calculateFeedScore({
         wantDoc,
         userGeolocationCoordinates: options.geolocationCoordinates,
       })
-    ).map(this.toWant);
+    );
+
+    const wantsFeed = await Promise.all(orderedRelevantWants.map(this.toWant));
 
     return wantsFeed;
   }
 
-  private toWant(wantDoc: WantDoc) {
+  private async toWant(wantDoc: WantDoc) {
     const want: Want = {
       id: wantDoc.id,
       creatorId: wantDoc.creatorId,
@@ -421,7 +425,7 @@ class WantsService {
       visibility: {
         visibleTo: wantDoc.visibility.visibleTo,
       },
-      image: wantDoc.image,
+      image: null,
       createdAt: wantDoc.createdAt,
       updatedAt: wantDoc.updatedAt,
     };
@@ -430,6 +434,20 @@ class WantsService {
       want.visibility.location = {
         address: wantDoc.visibility.location.address,
         radiusInMeters: wantDoc.visibility.location.radiusInMeters,
+      };
+    }
+
+    if (wantDoc.image) {
+      const [signedUrl] = await this.settings.storage.client
+        .bucket(wantDoc.image.gcs.bucket)
+        .file(wantDoc.image.gcs.fileName)
+        .getSignedUrl({
+          action: 'read',
+          expires: dayjs().add(1, 'hour').toDate(),
+        });
+
+      want.image = {
+        url: signedUrl,
       };
     }
 
@@ -519,7 +537,14 @@ class WantsService {
 
     await gcsFile.save(image.data);
 
-    return gcsFile.publicUrl();
+    const wantDocImage: WantDocImage = {
+      gcs: {
+        bucket: this.settings.storage.buckets.wantsAssets,
+        fileName,
+      },
+    };
+
+    return wantDocImage;
   }
 }
 
