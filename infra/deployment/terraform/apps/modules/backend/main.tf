@@ -143,9 +143,10 @@ resource "google_compute_region_network_endpoint_group" "backend" {
 
 resource "google_compute_region_backend_service" "backend" {
   name                  = "backend"
-  load_balancing_scheme = "EXTERNAL"
+  load_balancing_scheme = "INTERNAL_MANAGED"
   backend {
-    group = google_compute_region_network_endpoint_group.backend.id
+    group          = google_compute_region_network_endpoint_group.backend.id
+    balancing_mode = "UTILIZATION"
   }
 }
 
