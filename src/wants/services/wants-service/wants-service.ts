@@ -198,7 +198,7 @@ class WantsService {
       throw new NotFoundError(`Want ${wantId} not found`);
     }
 
-    if (wantData.deletedAt()) {
+    if (wantData.deletedAt) {
       throw new NotFoundError(`Want ${wantId} not found`);
     }
 
