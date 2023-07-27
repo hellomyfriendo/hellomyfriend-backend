@@ -46,13 +46,6 @@ resource "google_storage_bucket_iam_member" "wants_assets_backend_sa" {
   member   = "serviceAccount:${var.backend_service_account_email}"
 }
 
-resource "google_storage_bucket_iam_member" "wants_assets_cloud_cdn_sa" {
-  for_each = toset(local.cloud_cdn_sa_bucket_roles)
-  bucket   = google_storage_bucket.wants_assets.name
-  role     = each.value
-  member   = "serviceAccount:${local.cloud_cdn_service_account_email}"
-}
-
 resource "google_apikeys_key" "backend" {
   name         = "backend-api-key"
   display_name = "Backend API Key"
@@ -214,6 +207,27 @@ resource "google_compute_url_map" "backend" {
       service = google_compute_backend_bucket.wants_assets_cdn.id
     }
   }
+}
+
+resource "random_id" "wants_assets_cdn_key_url_signature" {
+  byte_length = 16
+}
+
+resource "google_compute_backend_bucket_signed_url_key" "wants_assets_cdn" {
+  name           = "wants-assets-key"
+  key_value      = random_id.wants_assets_cdn_key_url_signature.b64_url
+  backend_bucket = google_compute_backend_bucket.wants_assets_cdn.name
+}
+
+resource "google_storage_bucket_iam_member" "wants_assets_cloud_cdn_sa" {
+  for_each = toset(local.cloud_cdn_sa_bucket_roles)
+  bucket   = google_storage_bucket.wants_assets.name
+  role     = each.value
+  member   = "serviceAccount:${local.cloud_cdn_service_account_email}"
+
+  depends_on = [
+    google_compute_backend_bucket_signed_url_key.wants_assets_cdn
+  ]
 }
 
 module "external_https_lb" {
