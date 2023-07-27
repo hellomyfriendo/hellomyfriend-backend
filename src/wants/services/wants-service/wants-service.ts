@@ -39,9 +39,9 @@ interface WantDoc {
   adminsIds: string[];
   membersIds: string[];
   title: string;
-  description?: string;
+  description: string | null;
   visibility: WantDocVisibility;
-  image?: WantImage;
+  image: WantImage | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
@@ -113,7 +113,7 @@ interface UpdateWantOptions {
   title?: string;
   description?: string;
   visibility?: WantVisibility;
-  image: {
+  image?: {
     data: Buffer;
     mimeType: string;
   };
@@ -140,11 +140,13 @@ class WantsService {
     const wantDocRef = await this.settings.firestore.client
       .collection(this.settings.firestore.collections.wants)
       .add({
-        creator: creator.id,
-        admins: [creator.id],
+        creatorId: creator.id,
+        adminsIds: [creator.id],
+        membersIds: [],
         title: options.title,
         description: options.description,
         visibility: wantDocVisibility,
+        image: null,
         createdAt: Timestamp.fromDate(now),
         updatedAt: Timestamp.fromDate(now),
         deletedAt: null,

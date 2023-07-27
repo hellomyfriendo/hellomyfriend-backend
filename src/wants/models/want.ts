@@ -7,9 +7,9 @@ interface Want {
   adminsIds: string[];
   membersIds: string[];
   title: string;
-  description?: string;
+  description: string | null;
   visibility: WantVisibility;
-  image?: WantImage;
+  image: WantImage | null;
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;
