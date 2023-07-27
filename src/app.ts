@@ -16,6 +16,7 @@ import {Auth} from './middleware';
 import {logger} from './logger';
 import {errorHandler} from './error-handler';
 import {config} from './config';
+import {HealthCheckRouter} from './health-check';
 
 initializeApp({
   projectId: config.google.projectId,
@@ -76,6 +77,8 @@ const authService = new AuthService({
   logger,
 });
 
+const healthCheckRouter = new HealthCheckRouter().router;
+
 const wantsRouterV1 = new WantsRouterV1({
   wantsService,
 }).router;
@@ -122,6 +125,8 @@ app.use(
     usersService,
   }).requireAuth
 );
+
+app.use('/', healthCheckRouter);
 
 app.use('/v1/wants', wantsRouterV1);
 
