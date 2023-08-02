@@ -1,3 +1,7 @@
+output "bootstrap_key_ring" {
+  value = module.project.bootstrap_key_ring
+}
+
 output "tfstate_bucket" {
   value = module.project.tfstate_bucket
 }

@@ -3,12 +3,12 @@ locals {
 
   cloudbuild_sa_roles = [
     "roles/editor", # Only Editor allows the creation of monitoring alerts. See https://github.com/hashicorp/terraform-provider-google/issues/11603,
+    "roles/cloudkms.admin",
     "roles/secretmanager.admin"
   ]
 }
 
 data "google_project" "project" {
-  project_id = var.project_id
 }
 
 resource "google_project_iam_member" "cloudbuild_sa" {

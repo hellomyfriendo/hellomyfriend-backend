@@ -1,5 +1,5 @@
 locals {
-  backend_repository = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.backend.name}"
+  backend_repository = "${var.region}-docker.pkg.dev/${data.google_project.project.project_id}/${google_artifact_registry_repository.backend.name}"
   backend_image      = "${local.backend_repository}/backend"
 
   cloudbuild_sa_email = "${data.google_project.project.number}@cloudbuild.gserviceaccount.com"
@@ -17,7 +17,6 @@ locals {
 }
 
 data "google_project" "project" {
-  project_id = var.project_id
 }
 
 # backend

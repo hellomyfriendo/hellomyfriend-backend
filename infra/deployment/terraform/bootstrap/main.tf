@@ -17,8 +17,6 @@ module "project" {
 module "iam" {
   source = "./modules/iam"
 
-  project_id = var.project_id
-
   depends_on = [module.project]
 }
 
@@ -33,7 +31,6 @@ module "firestore" {
 module "apps" {
   source = "./modules/apps"
 
-  project_id                    = var.project_id
   region                        = var.region
   backend_service_account_email = module.iam.backend_service_account_email
   alerting_emails               = var.alerting_emails

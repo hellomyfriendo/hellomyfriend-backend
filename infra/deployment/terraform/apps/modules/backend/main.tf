@@ -12,13 +12,38 @@ locals {
 }
 
 data "google_project" "project" {
-  project_id = var.project_id
+}
+
+data "google_storage_project_service_account" "gcs_sa" {
 }
 
 data "docker_registry_image" "backend" {
   name = var.backend_image
 }
 
+# KMS
+resource "google_kms_key_ring" "keyring" {
+  name     = "backend-${var.region}-keyring"
+  location = var.region
+}
+
+resource "google_kms_crypto_key" "backend" {
+  name            = "backend-key"
+  key_ring        = google_kms_key_ring.keyring.id
+  rotation_period = "7776000s"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "google_kms_crypto_key_iam_member" "gcs_sa_backend" {
+  crypto_key_id = google_kms_crypto_key.backend.id
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:${data.google_storage_project_service_account.gcs_sa.email_address}"
+}
+
+# GCS
 resource "random_string" "buckets_prefix" {
   length  = 4
   special = false
@@ -26,11 +51,18 @@ resource "random_string" "buckets_prefix" {
 }
 
 resource "google_storage_bucket" "wants_assets" {
-  name          = "${random_string.buckets_prefix.result}-backend-wants-assets"
-  location      = var.region
-  force_destroy = true
+  name     = "${random_string.buckets_prefix.result}-backend-wants-assets"
+  location = var.region
 
   uniform_bucket_level_access = true
+
+  encryption {
+    default_kms_key_name = google_kms_crypto_key.backend.id
+  }
+
+  depends_on = [
+    google_kms_crypto_key_iam_member.gcs_sa_backend
+  ]
 }
 
 resource "google_storage_bucket_iam_member" "wants_assets_backend_sa" {
@@ -39,6 +71,8 @@ resource "google_storage_bucket_iam_member" "wants_assets_backend_sa" {
   role     = each.value
   member   = "serviceAccount:${var.backend_service_account_email}"
 }
+
+# API Keys
 
 resource "google_apikeys_key" "backend" {
   name         = "backend-api-key"
@@ -74,6 +108,8 @@ resource "google_secret_manager_secret_iam_member" "api_key_backend_sa" {
   member    = "serviceAccount:${var.backend_service_account_email}"
 }
 
+# Cloud Run
+
 resource "google_cloud_run_v2_service" "backend" {
   name     = "backend"
   location = var.region
@@ -96,7 +132,7 @@ resource "google_cloud_run_v2_service" "backend" {
       }
       env {
         name  = "GOOGLE_PROJECT_ID"
-        value = var.project_id
+        value = data.google_project.project.project_id
       }
       env {
         name  = "LOG_LEVEL"
@@ -163,7 +199,7 @@ module "external_https_lb" {
   source  = "GoogleCloudPlatform/lb-http/google//modules/serverless_negs"
   version = "~> 9.0"
 
-  project = var.project_id
+  project = data.google_project.project.project_id
   name    = "backend"
 
   ssl                             = true

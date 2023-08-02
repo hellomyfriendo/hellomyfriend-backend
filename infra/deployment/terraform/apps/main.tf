@@ -26,7 +26,6 @@ provider "docker" {
 module "monitoring" {
   source = "./modules/monitoring"
 
-  project_id      = var.project_id
   alerting_emails = local.alerting_emails_list
 }
 
@@ -37,7 +36,6 @@ resource "google_compute_global_address" "backend_external_https_lb" {
 module "backend" {
   source = "./modules/backend"
 
-  project_id                    = var.project_id
   region                        = var.region
   backend_image                 = var.backend_image
   backend_service_account_email = var.backend_service_account_email
