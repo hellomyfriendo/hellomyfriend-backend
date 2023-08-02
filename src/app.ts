@@ -9,7 +9,7 @@ import {Client} from '@googlemaps/google-maps-services-js';
 import {initializeApp} from 'firebase-admin/app';
 import * as firebaseAdmin from 'firebase-admin';
 import {AuthService} from './auth';
-import {FriendsService} from './friends';
+import {FriendsRouterV1, FriendsService} from './friends';
 import {UsersService} from './users';
 import {WantsRouterV1, WantsService} from './wants';
 import {Auth} from './middleware';
@@ -78,6 +78,8 @@ const authService = new AuthService({
 
 const healthCheckRouter = new HealthCheckRouter().router;
 
+const friendsRouterV1 = new FriendsRouterV1({friendsService}).router;
+
 const wantsRouterV1 = new WantsRouterV1({
   wantsService,
 }).router;
@@ -126,6 +128,8 @@ app.use(
 );
 
 app.use('/', healthCheckRouter);
+
+app.use('/v1/friends', friendsRouterV1);
 
 app.use('/v1/wants', wantsRouterV1);
 

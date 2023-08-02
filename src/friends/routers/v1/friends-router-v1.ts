@@ -12,7 +12,7 @@ interface FriendsRouterV1Settings {
   friendsService: FriendsService;
 }
 
-class FriendsRouter {
+class FriendsRouterV1 {
   constructor(private readonly settings: FriendsRouterV1Settings) {}
 
   get router() {
@@ -235,4 +235,4 @@ class FriendsRouter {
   }
 }
 
-export {FriendsRouter};
+export {FriendsRouterV1};
