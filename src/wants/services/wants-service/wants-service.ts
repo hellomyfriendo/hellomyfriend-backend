@@ -260,6 +260,10 @@ class WantsService {
       const userFriends =
         await this.settings.friendsService.listFriendsByUserId(userId);
 
+      if (userFriends.length === 0) {
+        return [];
+      }
+
       const wantsDocsSnapshots = await this.settings.firestore.client
         .collection(this.settings.firestore.collections.wants)
         .where('deletedAt', '==', null)
