@@ -126,7 +126,7 @@ class FriendsService {
       }),
     ]);
 
-    followsFromUser
+    return followsFromUser
       .filter(followFrom =>
         followsToUser.some(
           followTo => followTo.fromUserId === followFrom.toUserId
