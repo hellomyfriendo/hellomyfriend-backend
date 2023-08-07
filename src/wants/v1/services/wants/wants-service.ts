@@ -257,9 +257,8 @@ class WantsService {
     // TODO(Marcus): iterate and optimize this, performance and user experience wise.
 
     const listFriendsWantsDocs = async (userId: string) => {
-      const userFriends = await this.settings.friendsService.listFriendships({
-        userId,
-      });
+      const userFriends =
+        await this.settings.friendsService.listFriendsByUserId(userId);
 
       if (userFriends.length === 0) {
         return [];
@@ -270,7 +269,7 @@ class WantsService {
         .withConverter(wantDocConverter)
         .where('deletedAt', '==', null)
         .where('creatorId', 'in', userFriends)
-        .where('visibility', '==', 'friends')
+        .where('visibility.visibleTo', '==', 'friends')
         .get();
 
       return wantsDocsSnapshots.docs.map(wantSnapshot => wantSnapshot.data());
@@ -281,7 +280,7 @@ class WantsService {
         .collection(this.settings.firestore.collections.wants)
         .withConverter(wantDocConverter)
         .where('deletedAt', '==', null)
-        .where('visibility', 'array-contains', userId)
+        .where('visibility.visibleTo', 'array-contains', userId)
         .get();
 
       return wantsSnapshot.docs.map(wantSnapshot => wantSnapshot.data());
@@ -292,7 +291,7 @@ class WantsService {
         .collection(this.settings.firestore.collections.wants)
         .withConverter(wantDocConverter)
         .where('deletedAt', '==', null)
-        .where('visibility', '==', 'public')
+        .where('visibility.visibleTo', '==', 'public')
         .get();
 
       return wantsSnapshot.docs.map(wantSnapshot => wantSnapshot.data());
@@ -308,11 +307,11 @@ class WantsService {
       const calculateVisibilityScore = (wantDoc: WantDoc) => {
         switch (wantDoc.visibility.visibleTo) {
           case WantVisibleTo.Friends:
-            return -0.25;
+            return -0.2;
           case WantVisibleTo.Public:
             return -0.15;
           default:
-            return -0.2;
+            return -0.25;
         }
       };
 
@@ -394,29 +393,31 @@ class WantsService {
       throw new NotFoundError(`User ${options.userId} not found`);
     }
 
-    const [userFriendsWants, userTargetedWants, publicWants] =
+    const [userFriendsWantDocs, userTargetedWantDocs, publicWantDocs] =
       await Promise.all([
         listFriendsWantsDocs(user.id),
         listUserTargetedWantsDocs(user.id),
         listPublicWantsDocs(),
       ]);
 
-    const relevantWants = [
-      ...userFriendsWants,
-      ...userTargetedWants,
-      ...publicWants,
+    const relevantWantDocs = [
+      ...userFriendsWantDocs,
+      ...userTargetedWantDocs,
+      ...publicWantDocs,
     ];
 
-    const orderedRelevantWants = orderBy(relevantWants, wantDoc =>
+    const orderedRelevantWantDocs = orderBy(relevantWantDocs, wantDoc =>
       calculateFeedScore({
         wantDoc,
         userGeolocationCoordinates: options.geolocationCoordinates,
       })
     );
 
-    const wantsFeed = await Promise.all(orderedRelevantWants.map(this.toWant));
-
-    return wantsFeed;
+    return await Promise.all(
+      orderedRelevantWantDocs.map(async wantDoc => {
+        return await this.toWant(wantDoc);
+      })
+    );
   }
 
   private async toWant(wantDoc: WantDoc) {
@@ -446,10 +447,11 @@ class WantsService {
       const [signedUrl] = await this.settings.storage.client
         .bucket(wantDoc.image.gcs.bucket)
         .file(wantDoc.image.gcs.fileName)
-        .getSignedUrl({
-          action: 'read',
-          expires: dayjs().add(1, 'hour').toDate(),
-        });
+        .publicUrl();
+      // .getSignedUrl({
+      //   action: 'read',
+      //   expires: dayjs().add(1, 'hour').toDate(),
+      // });
 
       want.image = {
         url: signedUrl,

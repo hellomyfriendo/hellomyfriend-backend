@@ -129,6 +129,26 @@ class FriendsService {
     return listFriendshipsQuerySnapshot.docs.map(doc => doc.data());
   }
 
+  async listFriendsByUserId(userId: string): Promise<string[]> {
+    const userFriendships = await this.listFriendships({
+      userId,
+    });
+
+    return userFriendships.map(friendship => {
+      if (friendship.userId1 === userId) {
+        return friendship.userId2;
+      }
+
+      if (friendship.userId2 === userId) {
+        return friendship.userId1;
+      }
+
+      throw new Error(
+        `User ${userId} was not found in neither userId1 or userId2 of Friendship ${friendship.id}. This should never happen`
+      );
+    });
+  }
+
   async deleteFriendship(friendshipId: string) {
     const friendshipDocRef = this.settings.firestore.client
       .doc(`${this.settings.firestore.collections.friendships}/${friendshipId}`)
