@@ -19,27 +19,112 @@ resource "google_project_iam_custom_role" "cloudbuild_apps" {
   description = "Contains the permissions necessary to run the apps Cloud Build pipeline"
   permissions = [
     "cloudbuild.builds.create",
+    "compute.backendServices.create",
+    "compute.backendServices.delete",
+    "compute.backendServices.get",
+    "compute.backendServices.update",
+    "compute.globalAddresses.create",
+    "compute.globalAddresses.delete",
+    "compute.globalAddresses.get",
+    "compute.globalForwardingRules.create",
+    "compute.globalForwardingRules.delete",
+    "compute.globalForwardingRules.get",
+    "compute.globalForwardingRules.update",
+    "compute.globalOperations.get",
     "logging.logEntries.create",
-    "pubsub.topics.publish",
+    "monitoring.alertPolicies.create",
+    "monitoring.alertPolicies.delete",
+    "monitoring.alertPolicies.get",
+    "monitoring.alertPolicies.update",
+    "monitoring.notificationChannels.create",
+    "monitoring.notificationChannels.delete",
+    "monitoring.notificationChannels.get",
+    "monitoring.notificationChannels.update",
     "resourcemanager.projects.get",
     "secretmanager.secrets.create",
+    "secretmanager.secrets.delete",
     "secretmanager.secrets.get",
-    "secretmanager.secrets.getIamPolicy",
-    "secretmanager.secrets.setIamPolicy",
-    "secretmanager.versions.access",
+    "secretmanager.secrets.update",
     "secretmanager.versions.add",
+    "secretmanager.versions.destroy",
+    "secretmanager.versions.disable",
     "secretmanager.versions.enable",
     "secretmanager.versions.get",
-    "source.repos.get",
-    "source.repos.list",
     "storage.buckets.create",
+    "storage.buckets.delete",
     "storage.buckets.get",
-    "storage.objects.create",
-    "storage.objects.delete",
-    "storage.objects.get",
-    "storage.objects.list",
+    "storage.buckets.update",
   ]
 }
+
+resource "google_sourcerepo_repository_iam_member" "cloudbuild_apps_sa" {
+  project    = data.google_project.project.project_id
+  repository = var.sourcerepo_name
+  role       = "roles/viewer"
+  member     = "serviceAccount:${google_service_account.cloudbuild_apps.email}"
+}
+
+resource "google_storage_bucket_iam_member" "cloudbuild_apps_sa" {
+  bucket = var.tfstate_bucket
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.cloudbuild_apps.email}"
+}
+
+# cloudnotifications.activities.list
+# monitoring.dashboards.create
+# monitoring.dashboards.delete
+# monitoring.dashboards.get
+# monitoring.dashboards.list
+# monitoring.dashboards.update
+# monitoring.groups.create
+# monitoring.groups.delete
+# monitoring.groups.get
+# monitoring.groups.list
+# monitoring.groups.update
+# monitoring.metricDescriptors.create
+# monitoring.metricDescriptors.delete
+# monitoring.metricDescriptors.get
+# monitoring.metricDescriptors.list
+# monitoring.metricsScopes.link
+# monitoring.monitoredResourceDescriptors.get
+# monitoring.monitoredResourceDescriptors.list
+# monitoring.notificationChannels.getVerificationCode
+# monitoring.notificationChannels.sendVerificationCode
+# monitoring.publicWidgets.create
+# monitoring.publicWidgets.delete
+# monitoring.publicWidgets.get
+# monitoring.publicWidgets.list
+# monitoring.publicWidgets.update
+# monitoring.services.create
+# monitoring.services.delete
+# monitoring.services.get
+# monitoring.services.list
+# monitoring.services.update
+# monitoring.slos.create
+# monitoring.slos.delete
+# monitoring.slos.get
+# monitoring.slos.list
+# monitoring.slos.update
+# monitoring.snoozes.create
+# monitoring.snoozes.get
+# monitoring.snoozes.list
+# monitoring.snoozes.update
+# monitoring.timeSeries.create
+# monitoring.timeSeries.list
+# monitoring.uptimeCheckConfigs.create
+# monitoring.uptimeCheckConfigs.delete
+# monitoring.uptimeCheckConfigs.get
+# monitoring.uptimeCheckConfigs.list
+# monitoring.uptimeCheckConfigs.update
+# opsconfigmonitoring.resourceMetadata.list
+# opsconfigmonitoring.resourceMetadata.write
+# resourcemanager.projects.get
+# resourcemanager.projects.list
+# serviceusage.services.enable
+# stackdriver.projects.edit
+# stackdriver.projects.get
+# stackdriver.resourceMetadata.list
+# stackdriver.resourceMetadata.write
 
 resource "google_project_iam_member" "cloudbuild_apps_sa" {
   project = data.google_project.project.project_id

@@ -23,7 +23,7 @@ variable "api_domain_name" {
   description = "The API domain name."
 }
 
-variable "alerting_emails" {
+variable "monitoring_alerts_emails" {
   type        = string
   description = "Comma-separated list of email addresses that will receive monitoring alerts."
 }

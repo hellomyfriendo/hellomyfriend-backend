@@ -1,5 +1,5 @@
 locals {
-  alerting_emails_list = split(",", var.alerting_emails)
+  monitoring_alerts_emails_list = split(",", var.monitoring_alerts_emails)
 }
 
 data "google_client_config" "default" {
@@ -26,7 +26,7 @@ provider "docker" {
 module "monitoring" {
   source = "./modules/monitoring"
 
-  alerting_emails = local.alerting_emails_list
+  monitoring_alerts_emails = local.monitoring_alerts_emails_list
 }
 
 resource "google_compute_global_address" "api_external_https_lb" {

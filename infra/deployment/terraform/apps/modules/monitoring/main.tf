@@ -2,12 +2,12 @@ locals {
   notification_rate_limit_period = "300s"
 }
 
-resource "google_monitoring_notification_channel" "alerting_emails" {
-  count        = length(var.alerting_emails)
-  display_name = "Monitoring Alerts on ${var.alerting_emails[count.index]}"
+resource "google_monitoring_notification_channel" "monitoring_alerts_emails" {
+  count        = length(var.monitoring_alerts_emails)
+  display_name = "Monitoring Alerts on ${var.monitoring_alerts_emails[count.index]}"
   type         = "email"
   labels = {
-    email_address = var.alerting_emails[count.index]
+    email_address = var.monitoring_alerts_emails[count.index]
   }
   force_delete = true
 }
@@ -26,7 +26,7 @@ resource "google_monitoring_alert_policy" "cloudbuild_success" {
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "cloudbuild_error" {
@@ -43,7 +43,7 @@ resource "google_monitoring_alert_policy" "cloudbuild_error" {
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "bucket_accessible_to_public" {
@@ -63,7 +63,7 @@ resource "google_monitoring_alert_policy" "bucket_accessible_to_public" {
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "bucket_modified" {
@@ -83,7 +83,7 @@ resource "google_monitoring_alert_policy" "bucket_modified" {
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "bucket_permissions_modified" {
@@ -103,7 +103,7 @@ resource "google_monitoring_alert_policy" "bucket_permissions_modified" {
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "buckets_enumerated_by_sa" {
@@ -126,7 +126,7 @@ EOF
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "compute_engine_firewall_rule_opened_to_the_world" {
@@ -154,7 +154,7 @@ EOF
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "compute_engine_firewall_rule_modified" {
@@ -177,7 +177,7 @@ EOF
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "compute_engine_image_created" {
@@ -202,7 +202,7 @@ EOF
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "compute_engine_network_created" {
@@ -222,7 +222,7 @@ resource "google_monitoring_alert_policy" "compute_engine_network_created" {
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "compute_engine_network_route_created_or_modified" {
@@ -242,7 +242,7 @@ resource "google_monitoring_alert_policy" "compute_engine_network_route_created_
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "iam_policy_modified" {
@@ -262,7 +262,7 @@ resource "google_monitoring_alert_policy" "iam_policy_modified" {
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "iam_role_created" {
@@ -285,7 +285,7 @@ EOF
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "iam_role_updated" {
@@ -308,7 +308,7 @@ EOF
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "logging_bucket_deleted" {
@@ -328,7 +328,7 @@ resource "google_monitoring_alert_policy" "logging_bucket_deleted" {
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "logging_sink_modified" {
@@ -348,7 +348,7 @@ resource "google_monitoring_alert_policy" "logging_sink_modified" {
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "sa_created" {
@@ -368,7 +368,7 @@ resource "google_monitoring_alert_policy" "sa_created" {
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "sa_key_created" {
@@ -388,7 +388,7 @@ resource "google_monitoring_alert_policy" "sa_key_created" {
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "sa_impersonation_activity_using_access_token_generation" {
@@ -414,7 +414,7 @@ EOF
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "unauthorized_sa_activity" {
@@ -437,7 +437,7 @@ EOF
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }
 
 resource "google_monitoring_alert_policy" "unauthorized_user_activity" {
@@ -460,5 +460,5 @@ EOF
       period = local.notification_rate_limit_period
     }
   }
-  notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
+  notification_channels = google_monitoring_notification_channel.monitoring_alerts_emails.*.id
 }

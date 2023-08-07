@@ -30,17 +30,17 @@ resource "google_cloudbuild_trigger" "apps" {
 
   trigger_template {
     repo_name   = var.sourcerepo_name
-    branch_name = var.branch_name
+    branch_name = var.sourcerepo_branch_name
   }
 
   filename = "infra/deployment/cloudbuild/apps/cloudbuild.yaml"
 
   substitutions = {
-    _REGION          = var.region
-    _API_IMAGE       = local.api_image
-    _API_SA_EMAIL    = var.api_sa_email
-    _DOMAIN_NAME     = var.api_domain_name
-    _ALERTING_EMAILS = join(",", var.alerting_emails)
-    _TFSTATE_BUCKET  = var.tfstate_bucket
+    _REGION                   = var.region
+    _API_IMAGE                = local.api_image
+    _API_SA_EMAIL             = var.api_sa_email
+    _DOMAIN_NAME              = var.api_domain_name
+    _MONITORING_ALERTS_EMAILS = join(",", var.monitoring_alerts_emails)
+    _TFSTATE_BUCKET           = var.tfstate_bucket
   }
 }

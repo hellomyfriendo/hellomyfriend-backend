@@ -26,6 +26,6 @@ steps:
       - 'TF_VAR_api_image=${_API_IMAGE}'
       - 'TF_VAR_api_sa_email=${_API_SA_EMAIL}'
       - 'TF_VAR_api_domain_name=${_API_DOMAIN_NAME}'
-      - 'TF_VAR_alerting_emails=${_ALERTING_EMAILS}'
+      - 'TF_VAR_monitoring_alerts_emails=${_MONITORING_ALERTS_EMAILS}'
 options:
   logging: CLOUD_LOGGING_ONLY

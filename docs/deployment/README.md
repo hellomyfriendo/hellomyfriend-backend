@@ -24,5 +24,5 @@
 ## Apps Deployment
 
 1. Deploy the Apps by either:
-   - Pushing code to the respective `branch_name`.
+   - Pushing code to the respective `sourcerepo_branch_name`.
    - Manually running the `apps` Cloud Build Trigger.

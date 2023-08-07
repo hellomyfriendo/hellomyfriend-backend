@@ -13,7 +13,7 @@ variable "api_domain_name" {
   description = "The API domain name."
 }
 
-variable "alerting_emails" {
+variable "monitoring_alerts_emails" {
   type        = list(string)
   description = "Email addresses that will receive monitoring alerts."
 }
@@ -23,7 +23,7 @@ variable "sourcerepo_name" {
   description = "The Cloud Source Repository name."
 }
 
-variable "branch_name" {
+variable "sourcerepo_branch_name" {
   type        = string
   description = "The Cloud Source repository branch name."
 }
