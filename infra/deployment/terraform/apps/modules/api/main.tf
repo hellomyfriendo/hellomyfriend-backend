@@ -54,6 +54,12 @@ resource "google_kms_crypto_key_iam_member" "secret_manager_service_agent_identi
   member        = "serviceAccount:${local.secret_manager_service_agent_identity_email}"
 }
 
+resource "google_kms_crypto_key_iam_member" "api_sa_api" {
+  crypto_key_id = google_kms_crypto_key.api.id
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:${var.api_sa_email}"
+}
+
 # GCS
 resource "google_storage_bucket" "wants_assets" {
   name     = "${data.google_project.project.project_id}-api-wants-assets"
@@ -191,6 +197,7 @@ resource "google_cloud_run_v2_service" "api" {
   }
 
   depends_on = [
+    google_kms_crypto_key_iam_member.api_sa_api,
     google_secret_manager_secret_iam_member.api_key_api_sa,
     google_storage_bucket_iam_member.wants_assets_api_sa
   ]

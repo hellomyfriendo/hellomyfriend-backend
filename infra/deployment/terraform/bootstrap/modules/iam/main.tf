@@ -17,6 +17,7 @@ resource "google_project_iam_custom_role" "cloudbuild_apps" {
   role_id     = "cloudbuildApps"
   title       = "CloudBuild apps Service Account custom role"
   description = "Contains the permissions necessary to run the apps Cloud Build pipeline"
+  # TODO(Marcus): See what to do about the setIamPolicy permissions
   permissions = [
     "apikeys.keys.getKeyString",
     "cloudbuild.builds.create",
@@ -64,6 +65,7 @@ resource "google_project_iam_custom_role" "cloudbuild_apps" {
     "secretmanager.secrets.get",
     "secretmanager.secrets.getIamPolicy",
     "secretmanager.secrets.setIamPolicy",
+    "secretmanager.versions.access",
     "serviceusage.apiKeys.create",
     "serviceusage.apiKeys.delete",
     "serviceusage.apiKeys.get",
