@@ -20,6 +20,8 @@ resource "google_project_iam_custom_role" "cloudbuild_apps" {
   permissions = [
     "apikeys.keys.getKeyString",
     "cloudbuild.builds.create",
+    "cloudkms.cryptoKeys.create",
+    "cloudkms.cryptoKeys.get",
     "cloudkms.keyRings.create",
     "cloudkms.keyRings.get",
     "compute.backendServices.create",
@@ -51,6 +53,9 @@ resource "google_project_iam_custom_role" "cloudbuild_apps" {
     "monitoring.notificationChannels.delete",
     "monitoring.notificationChannels.get",
     "resourcemanager.projects.get",
+    "run.services.create",
+    "run.services.delete",
+    "run.services.get",
     "secretmanager.secrets.create",
     "serviceusage.apiKeys.create",
     "serviceusage.apiKeys.delete",
@@ -95,6 +100,15 @@ resource "google_kms_crypto_key_iam_member" "artifact_registry_sa" {
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:${local.artifact_registry_sa}"
 }
+
+# Secret Manager service agent identity
+# See https://cloud.google.com/secret-manager/docs/cmek#service-identity
+resource "null_resource" "secret_manager_service_agent_identity" {
+  provisioner "local-exec" {
+    command = "gcloud beta services identity create --service \"secretmanager.googleapis.com\" --project ${data.google_project.project.project_id}"
+  }
+}
+
 
 # API service account
 resource "google_service_account" "api" {

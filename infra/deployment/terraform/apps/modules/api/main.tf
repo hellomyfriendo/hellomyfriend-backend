@@ -1,4 +1,6 @@
 locals {
+  secret_manager_service_agent_identity_email = "service-${data.google_project.project.number}@gcp-sa-secretmanager.iam.gserviceaccount.com"
+
   api_sa_bucket_roles = [
     "roles/storage.objectAdmin",
   ]
@@ -41,6 +43,12 @@ resource "google_kms_crypto_key_iam_member" "gcs_sa_api" {
   crypto_key_id = google_kms_crypto_key.api.id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:${data.google_storage_project_service_account.gcs_sa.email_address}"
+}
+
+resource "google_kms_crypto_key_iam_member" "secret_manager_service_agent_identity_api" {
+  crypto_key_id = google_kms_crypto_key.api.id
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:${local.secret_manager_service_agent_identity_email}"
 }
 
 # GCS
@@ -91,6 +99,10 @@ resource "google_secret_manager_secret" "api_key" {
       }
     }
   }
+
+  depends_on = [
+    google_kms_crypto_key_iam_member.secret_manager_service_agent_identity_api
+  ]
 }
 
 resource "google_secret_manager_secret_version" "api_key" {
