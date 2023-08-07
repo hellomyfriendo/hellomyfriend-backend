@@ -3,7 +3,9 @@
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "build",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "lib": ["ES2021"],
+    "typeRoots": ["src/types", "node_modules/@types"]
   },
   "include": ["src/**/*.ts", "test/**/*.ts"]
 }

@@ -1,5 +1,5 @@
 class UnauthorizedError extends Error {
-  constructor(message?: string) {
+  constructor(message?: string, public innerError?: Error | unknown) {
     super(message);
   }
 }

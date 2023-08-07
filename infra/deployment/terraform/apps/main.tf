@@ -1,3 +1,7 @@
+locals {
+  monitoring_alerts_emails_list = split(",", var.monitoring_alerts_emails)
+}
+
 data "google_client_config" "default" {
 }
 
@@ -19,10 +23,24 @@ provider "docker" {
   }
 }
 
-module "backend" {
-  source = "./modules/backend"
+module "monitoring" {
+  source = "./modules/monitoring"
 
-  project_id    = var.project_id
-  region        = var.region
-  backend_image = var.backend_image
+  monitoring_alerts_emails = local.monitoring_alerts_emails_list
+}
+
+resource "google_compute_global_address" "api_external_https_lb" {
+  name = "api-external-https-lb"
+}
+
+module "api" {
+  source = "./modules/api"
+
+  org_id                           = var.org_id
+  all_users_ingress_tag_value_id   = var.all_users_ingress_tag_value_id
+  region                           = var.region
+  api_image                        = var.api_image
+  api_sa_email                     = var.api_sa_email
+  api_domain_name                  = var.api_domain_name
+  api_external_https_lb_ip_address = google_compute_global_address.api_external_https_lb.address
 }

@@ -1,10 +1,10 @@
 import {Request, Response, NextFunction} from 'express';
-import {AuthService} from '../../auth';
+import {Auth as FirebaseAdminAuth} from 'firebase-admin/auth';
 import {UnauthorizedError} from '../../errors';
-import {UsersService} from '../../users';
+import {UsersService} from '../../users/v1';
 
 interface AuthSettings {
-  authService: AuthService;
+  firebaseAdminAuth: FirebaseAdminAuth;
   usersService: UsersService;
 }
 
@@ -13,17 +13,7 @@ class Auth {
 
   requireAuth = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const idToken = this.getIdToken(req);
-
-      if (!idToken) {
-        throw new UnauthorizedError(
-          '"token" is required in the "authorization" header'
-        );
-      }
-
-      const decodedIdToken = await this.settings.authService.decodeIdToken(
-        idToken
-      );
+      const decodedIdToken = await this.decodeIdToken(req);
 
       let user = await this.settings.usersService.getUserByFirebaseUid(
         decodedIdToken.uid
@@ -43,16 +33,24 @@ class Auth {
     }
   };
 
-  private getIdToken = (req: Request) => {
+  private async decodeIdToken(req: Request) {
     const authorizationHeader =
       req.header('Authorization') || req.header('authorization');
 
     if (!authorizationHeader) {
-      return;
+      throw new UnauthorizedError(
+        '"token" is required in the "authorization" header'
+      );
     }
 
-    return authorizationHeader.split(' ')[1];
-  };
+    const idToken = authorizationHeader.split(' ')[1];
+
+    try {
+      return await this.settings.firebaseAdminAuth.verifyIdToken(idToken);
+    } catch (err) {
+      throw new UnauthorizedError(`Error verifying idToken ${idToken}`, err);
+    }
+  }
 }
 
 export {Auth};

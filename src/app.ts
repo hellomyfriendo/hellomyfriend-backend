@@ -8,13 +8,22 @@ import {Storage} from '@google-cloud/storage';
 import {Client} from '@googlemaps/google-maps-services-js';
 import {initializeApp} from 'firebase-admin/app';
 import * as firebaseAdmin from 'firebase-admin';
-import {logger} from './logger';
-import {UsersService} from './users';
-import {errorHandler} from './error-handler';
-import {config} from './config';
-import {WantsRouterV1, WantsService} from './wants';
-import {AuthService} from './auth';
+import {HealthCheckRouter} from './health-check';
+import {UsersService} from './users/v1';
+import {
+  FriendsRouter as FriendsRouterV1,
+  FriendsService as FriendsServiceV1,
+  FriendRequestsService as FriendRequestsServiceV1,
+  FriendRequestsRouter as FriendRequestsRouterV1,
+} from './friends/v1';
+import {
+  WantsRouter as WantsRouterV1,
+  WantsService as WantsServiceV1,
+} from './wants/v1';
 import {Auth} from './middleware';
+import {errorHandler} from './error-handler/v1';
+import {logger} from './logger';
+import {config} from './config';
 
 initializeApp({
   projectId: config.google.projectId,
@@ -31,7 +40,7 @@ const storage = new Storage({
 
 const googleMapsServicesClient = new Client({});
 
-const usersService = new UsersService({
+const usersServiceV1 = new UsersService({
   firestore: {
     client: firestore,
     collections: {
@@ -40,7 +49,28 @@ const usersService = new UsersService({
   },
 });
 
-const wantsService = new WantsService({
+const friendsServiceV1 = new FriendsServiceV1({
+  firestore: {
+    client: firestore,
+    collections: {
+      friendships: config.friends.firestore.collections.friendships,
+    },
+  },
+  usersService: usersServiceV1,
+});
+
+const friendRequestsServiceV1 = new FriendRequestsServiceV1({
+  firestore: {
+    client: firestore,
+    collections: {
+      friendRequests: config.friends.firestore.collections.friendRequests,
+    },
+  },
+  friendsService: friendsServiceV1,
+  usersService: usersServiceV1,
+});
+
+const wantsServiceV1 = new WantsServiceV1({
   firestore: {
     client: firestore,
     collections: {
@@ -50,21 +80,27 @@ const wantsService = new WantsService({
   storage: {
     client: storage,
     buckets: {
-      wantsImages: config.wants.storage.buckets.wantsImages,
+      wantsAssets: config.wants.storage.buckets.wantsAssets,
     },
   },
   googleMapsServicesClient,
   googleApiKey: config.google.apiKey,
-  usersService,
+  friendsService: friendsServiceV1,
+  usersService: usersServiceV1,
 });
 
-const authService = new AuthService({
-  firebaseAuth: firebaseAdmin.auth(),
-  logger,
-});
+const healthCheckRouter = new HealthCheckRouter().router;
+
+const friendsRouterV1 = new FriendsRouterV1({friendsService: friendsServiceV1})
+  .router;
+
+const friendRequestsRouterV1 = new FriendRequestsRouterV1({
+  friendsService: friendsServiceV1,
+  friendRequestsService: friendRequestsServiceV1,
+}).router;
 
 const wantsRouterV1 = new WantsRouterV1({
-  wantsService,
+  wantsService: wantsServiceV1,
 }).router;
 
 const app = express();
@@ -105,10 +141,16 @@ app.use(fileUpload());
 
 app.use(
   new Auth({
-    authService,
-    usersService,
+    firebaseAdminAuth: firebaseAdmin.auth(),
+    usersService: usersServiceV1,
   }).requireAuth
 );
+
+app.use('/', healthCheckRouter);
+
+app.use('/v1/friends', friendsRouterV1);
+
+app.use('/v1/friend-requests', friendRequestsRouterV1);
 
 app.use('/v1/wants', wantsRouterV1);
 

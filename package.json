@@ -1,7 +1,7 @@
 {
-  "name": "hellomyfriendo-backend",
+  "name": "hellomyfriendo-api",
   "version": "1.0.0",
-  "description": "Hello, My Friendo! backend",
+  "description": "Hello, My Friendo! API",
   "main": "build/src/index.js",
   "private": true,
   "types": "build/src/index.d.ts",
@@ -18,7 +18,8 @@
     "compile": "tsc",
     "format": "prettier --write .",
     "fix": "gts fix",
-    "start": "nodemon --watch 'src/**/*.ts' --exec \"ts-node\" -r dotenv-expand/config src/index.ts",
+    "dev": "ts-node-dev -r dotenv-expand/config src/index.ts",
+    "start": "docker compose up --build",
     "prepare": "npm run compile && husky install",
     "pretest": "npm run compile",
     "posttest": "npm run lint"
@@ -28,6 +29,7 @@
     "@types/express": "^4.17.17",
     "@types/express-fileupload": "^1.4.1",
     "@types/jest": "^29.5.3",
+    "@types/lodash": "^4.14.195",
     "@types/mime-types": "^2.1.1",
     "@types/node": "^14.11.2",
     "dotenv": "^16.3.1",
@@ -37,10 +39,9 @@
     "jest": "^29.6.1",
     "jest-extended": "^4.0.0",
     "lint-staged": "^13.2.3",
-    "nodemon": "^3.0.1",
     "prettier": "^2.8.8",
     "ts-jest": "^29.1.1",
-    "ts-node": "^10.9.1",
+    "ts-node-dev": "^2.0.0",
     "typescript": "~4.7.0"
   },
   "lint-staged": {
@@ -55,11 +56,13 @@
     "@relaycorp/pino-cloud": "^1.0.28",
     "celebrate": "^15.0.1",
     "cors": "^2.8.5",
+    "dayjs": "^1.11.9",
     "express": "^4.18.2",
     "express-fileupload": "^1.4.0",
     "firebase-admin": "^11.10.1",
     "geofire-common": "^6.0.0",
     "http-status-codes": "^2.2.0",
+    "lodash": "^4.17.21",
     "mime-types": "^2.1.35",
     "pino": "^8.14.1",
     "pino-http": "^8.3.3"
