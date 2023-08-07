@@ -16,6 +16,9 @@ locals {
 data "google_project" "project" {
 }
 
+data "google_client_openid_userinfo" "me" {
+}
+
 data "google_storage_project_service_account" "gcs_sa" {
 }
 
@@ -105,9 +108,19 @@ resource "google_secret_manager_secret" "api_key" {
   ]
 }
 
+resource "google_secret_manager_secret_iam_member" "api_key_me" {
+  secret_id = google_secret_manager_secret.api_key.secret_id
+  role      = "roles/secretmanager.secretVersionManager"
+  member    = "serviceAccount:${data.google_client_openid_userinfo.me.email}"
+}
+
 resource "google_secret_manager_secret_version" "api_key" {
   secret      = google_secret_manager_secret.api_key.id
   secret_data = google_apikeys_key.api.key_string
+
+  depends_on = [
+    google_secret_manager_secret_iam_member.api_key_me
+  ]
 }
 
 resource "google_secret_manager_secret_iam_member" "api_key_api_sa" {
