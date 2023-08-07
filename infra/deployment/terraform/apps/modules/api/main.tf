@@ -23,7 +23,7 @@ data "docker_registry_image" "api" {
 
 # KMS
 resource "google_kms_key_ring" "keyring" {
-  name     = "api-${var.region}-keyring"
+  name     = "api-${var.region}-key-ring"
   location = var.region
 }
 
