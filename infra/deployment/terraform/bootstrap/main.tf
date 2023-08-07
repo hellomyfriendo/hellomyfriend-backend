@@ -17,9 +17,12 @@ module "project" {
 module "iam" {
   source = "./modules/iam"
 
-  bootstrap_kms_key_ring = module.project.bootstrap_kms_key_ring
-  sourcerepo_name        = var.sourcerepo_name
-  tfstate_bucket         = module.project.tfstate_bucket
+  org_id                      = var.org_id
+  all_users_ingress_tag_key   = var.all_users_ingress_tag_key
+  all_users_ingress_tag_value = var.all_users_ingress_tag_value
+  bootstrap_kms_key_ring      = module.project.bootstrap_kms_key_ring
+  sourcerepo_name             = var.sourcerepo_name
+  tfstate_bucket              = module.project.tfstate_bucket
 }
 
 module "firestore" {
@@ -34,6 +37,8 @@ module "apps" {
   source = "./modules/apps"
 
   org_id                           = var.org_id
+  all_users_ingress_tag_key        = var.all_users_ingress_tag_key
+  all_users_ingress_tag_value      = var.all_users_ingress_tag_value
   region                           = var.region
   api_sa_email                     = module.iam.api_sa_email
   api_domain_name                  = var.api_domain_name

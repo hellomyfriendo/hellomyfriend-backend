@@ -3,6 +3,16 @@ variable "org_id" {
   description = " The numeric ID of the organization."
 }
 
+variable "all_users_ingress_tag_key" {
+  type        = string
+  description = "The allUsersIngress tag key short name."
+}
+
+variable "all_users_ingress_tag_value" {
+  type        = string
+  description = "The allUsersIngress tag value short name."
+}
+
 variable "project_id" {
   type        = string
   description = "The project ID."

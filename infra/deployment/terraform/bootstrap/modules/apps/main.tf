@@ -6,6 +6,16 @@ locals {
 data "google_project" "project" {
 }
 
+data "google_tags_tag_key" "all_users_ingress" {
+  parent     = "organizations/${var.org_id}"
+  short_name = var.all_users_ingress_tag_key
+}
+
+data "google_tags_tag_value" "all_users_ingress" {
+  parent     = data.google_tags_tag_key.all_users_ingress.id
+  short_name = var.all_users_ingress_tag_value
+}
+
 # API
 resource "google_artifact_registry_repository" "api" {
   location      = var.region
@@ -36,12 +46,13 @@ resource "google_cloudbuild_trigger" "apps" {
   filename = "infra/deployment/cloudbuild/apps/cloudbuild.yaml"
 
   substitutions = {
-    _ORG_ID                   = var.org_id
-    _REGION                   = var.region
-    _API_IMAGE                = local.api_image
-    _API_SA_EMAIL             = var.api_sa_email
-    _API_DOMAIN_NAME          = var.api_domain_name
-    _MONITORING_ALERTS_EMAILS = join(",", var.monitoring_alerts_emails)
-    _TFSTATE_BUCKET           = var.tfstate_bucket
+    _ORG_ID                         = var.org_id
+    _ALL_USERS_INGRESS_TAG_VALUE_ID = data.google_tags_tag_value.all_users_ingress.id
+    _REGION                         = var.region
+    _API_IMAGE                      = local.api_image
+    _API_SA_EMAIL                   = var.api_sa_email
+    _API_DOMAIN_NAME                = var.api_domain_name
+    _MONITORING_ALERTS_EMAILS       = join(",", var.monitoring_alerts_emails)
+    _TFSTATE_BUCKET                 = var.tfstate_bucket
   }
 }

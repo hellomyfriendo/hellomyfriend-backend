@@ -37,6 +37,7 @@ module "api" {
   source = "./modules/api"
 
   org_id                           = var.org_id
+  all_users_ingress_tag_value_id   = var.all_users_ingress_tag_value_id
   region                           = var.region
   api_image                        = var.api_image
   api_sa_email                     = var.api_sa_email

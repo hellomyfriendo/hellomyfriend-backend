@@ -3,6 +3,11 @@ variable "org_id" {
   description = " The numeric ID of the organization."
 }
 
+variable "all_users_ingress_tag_value_id" {
+  type        = string
+  description = "The allUsersIngress tag value ID."
+}
+
 variable "region" {
   type        = string
   description = "The default Google Cloud region for the created resources."

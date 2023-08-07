@@ -7,10 +7,26 @@ locals {
 data "google_project" "project" {
 }
 
+data "google_tags_tag_key" "all_users_ingress" {
+  parent     = "organizations/${var.org_id}"
+  short_name = var.all_users_ingress_tag_key
+}
+
+data "google_tags_tag_value" "all_users_ingress" {
+  parent     = data.google_tags_tag_key.all_users_ingress.id
+  short_name = var.all_users_ingress_tag_value
+}
+
 # Cloud Build Apps service account
 resource "google_service_account" "cloudbuild_apps" {
   account_id   = "cloudbuild-apps"
   display_name = "CloudBuild Apps Service Account"
+}
+
+resource "google_tags_tag_value_iam_member" "all_users_ingress_cloudbuild_apps_sa" {
+  tag_value = data.google_tags_tag_value.all_users_ingress.name
+  role      = "roles/resourcemanager.tagUser"
+  member    = "serviceAccount:${google_service_account.cloudbuild_apps.email}"
 }
 
 resource "google_project_iam_custom_role" "cloudbuild_apps" {
@@ -74,8 +90,12 @@ resource "google_project_iam_custom_role" "cloudbuild_apps" {
     "resourcemanager.projects.get",
     "run.operations.get",
     "run.services.create",
+    "run.services.createTagBinding",
     "run.services.delete",
+    "run.services.deleteTagBinding",
     "run.services.get",
+    "run.services.listEffectiveTags",
+    "run.services.listTagBindings",
     "run.services.getIamPolicy",
     "run.services.setIamPolicy",
     "secretmanager.secrets.create",
