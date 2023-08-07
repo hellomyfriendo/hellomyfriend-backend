@@ -31,6 +31,7 @@ initializeApp({
 
 const firestore = new Firestore({
   projectId: config.google.projectId,
+  ignoreUndefinedProperties: true,
 });
 
 const storage = new Storage({
