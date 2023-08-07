@@ -8,9 +8,9 @@ variable "region" {
   description = "The default Google Cloud region for the created resources."
 }
 
-variable "domain_name" {
+variable "api_domain_name" {
   type        = string
-  description = "The domain name."
+  description = "The API domain name."
 }
 
 variable "alerting_emails" {

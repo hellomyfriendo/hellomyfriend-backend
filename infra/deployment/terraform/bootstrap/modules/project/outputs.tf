@@ -1,4 +1,4 @@
-output "bootstrap_key_ring" {
+output "bootstrap_kms_key_ring" {
   value = google_kms_key_ring.bootstrap.id
 }
 

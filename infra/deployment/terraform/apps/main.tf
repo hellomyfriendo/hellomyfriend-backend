@@ -29,16 +29,16 @@ module "monitoring" {
   alerting_emails = local.alerting_emails_list
 }
 
-resource "google_compute_global_address" "backend_external_https_lb" {
-  name = "backend-external-https-lb"
+resource "google_compute_global_address" "api_external_https_lb" {
+  name = "api-external-https-lb"
 }
 
-module "backend" {
-  source = "./modules/backend"
+module "api" {
+  source = "./modules/api"
 
-  region                        = var.region
-  backend_image                 = var.backend_image
-  backend_service_account_email = var.backend_service_account_email
-  domain_name                   = var.domain_name
-  external_https_lb_ip_address  = google_compute_global_address.backend_external_https_lb.address
+  region                           = var.region
+  api_image                        = var.api_image
+  api_sa_email                     = var.api_sa_email
+  api_domain_name                  = var.api_domain_name
+  api_external_https_lb_ip_address = google_compute_global_address.api_external_https_lb.address
 }

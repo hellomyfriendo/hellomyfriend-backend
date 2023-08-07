@@ -1,16 +1,16 @@
 steps:
-  # backend
+  # API
   - name: 'gcr.io/cloud-builders/docker'
-    id: backend-docker-build
+    id: api-docker-build
     args:
       - 'build'
-      - '--tag=${_BACKEND_IMAGE}'
+      - '--tag=${_API_IMAGE}'
       - '.'
   - name: 'gcr.io/cloud-builders/docker'
-    id: backend-docker-push
+    id: api-docker-push
     args:
       - 'push'
-      - '${_BACKEND_IMAGE}'
+      - '${_API_IMAGE}'
   # apps
   - name: 'hashicorp/terraform'
     id: terraform-apply-apps
@@ -23,7 +23,7 @@ steps:
       - 'TFSTATE_BUCKET=${_TFSTATE_BUCKET}'
       - 'TF_VAR_project_id=${PROJECT_ID}'
       - 'TF_VAR_region=${_REGION}'
-      - 'TF_VAR_backend_image=${_BACKEND_IMAGE}'
-      - 'TF_VAR_backend_service_account_email=${_BACKEND_SERVICE_ACCOUNT_EMAIL}'
-      - 'TF_VAR_domain_name=${_DOMAIN_NAME}'
+      - 'TF_VAR_api_image=${_API_IMAGE}'
+      - 'TF_VAR_api_sa_email=${_API_SA_EMAIL}'
+      - 'TF_VAR_api_domain_name=${_API_DOMAIN_NAME}'
       - 'TF_VAR_alerting_emails=${_ALERTING_EMAILS}'

@@ -16,6 +16,8 @@ locals {
     "serviceusage.googleapis.com",
     "sourcerepo.googleapis.com"
   ]
+
+  ninety_days_in_seconds = "7776000s"
 }
 
 data "google_storage_project_service_account" "gcs_sa" {
@@ -41,22 +43,22 @@ resource "google_kms_key_ring" "bootstrap" {
 resource "google_kms_crypto_key" "tfstate_bucket" {
   name            = "tfstate-bucket-key"
   key_ring        = google_kms_key_ring.bootstrap.id
-  rotation_period = "7776000s"
+  rotation_period = local.ninety_days_in_seconds
 
   lifecycle {
     prevent_destroy = true
   }
 }
 
+# Terraform state bucket
+resource "random_pet" "tfstate_bucket" {
+  length = 4
+}
+
 resource "google_kms_crypto_key_iam_member" "gcs_sa_tfstate_bucket" {
   crypto_key_id = google_kms_crypto_key.tfstate_bucket.id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:${data.google_storage_project_service_account.gcs_sa.email_address}"
-}
-
-# Terraform state bucket
-resource "random_pet" "tfstate_bucket" {
-  length = 4
 }
 
 resource "google_storage_bucket" "tfstate" {

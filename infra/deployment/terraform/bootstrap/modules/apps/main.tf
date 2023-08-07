@@ -1,35 +1,32 @@
 locals {
-  backend_repository = "${var.region}-docker.pkg.dev/${data.google_project.project.project_id}/${google_artifact_registry_repository.backend.name}"
-  backend_image      = "${local.backend_repository}/backend"
-
-  cloudbuild_sa_email = "${data.google_project.project.number}@cloudbuild.gserviceaccount.com"
-
-  cloudbuild_sa_secret_roles = [
-    "roles/secretmanager.secretAccessor",
-    "roles/secretmanager.viewer"
-  ]
-
-  compute_sa_email = "${data.google_project.project.number}-compute@developer.gserviceaccount.com"
-
-  compute_sa_secret_roles = [
-    "roles/secretmanager.secretAccessor",
-  ]
+  api_repository = "${var.region}-docker.pkg.dev/${data.google_project.project.project_id}/${google_artifact_registry_repository.api.name}"
+  api_image      = "${local.api_repository}/api"
 }
 
 data "google_project" "project" {
 }
 
-# backend
-resource "google_artifact_registry_repository" "backend" {
+# API
+resource "google_artifact_registry_repository" "api" {
   location      = var.region
-  repository_id = "backend"
+  repository_id = "api"
   format        = "DOCKER"
+  kms_key_name  = var.artifact_registry_kms_crypto_key
 }
 
-resource "google_cloudbuild_trigger" "apps" {
-  name = "apps"
+resource "google_artifact_registry_repository_iam_member" "api_cloudbuild_apps_sa" {
+  project    = google_artifact_registry_repository.api.project
+  location   = google_artifact_registry_repository.api.location
+  repository = google_artifact_registry_repository.api.name
+  role       = "roles/artifactregistry.writer"
+  member     = "serviceAccount:${var.cloudbuild_apps_sa_email}"
+}
 
-  description = "Build and deploy the apps"
+# Cloud Build apps
+resource "google_cloudbuild_trigger" "apps" {
+  name            = "apps"
+  description     = "Build and deploy the apps"
+  service_account = "projects/${data.google_project.project.project_id}/serviceAccounts/${var.cloudbuild_apps_sa_email}"
 
   trigger_template {
     repo_name   = var.sourcerepo_name
@@ -39,11 +36,11 @@ resource "google_cloudbuild_trigger" "apps" {
   filename = "infra/deployment/cloudbuild/apps/cloudbuild.yaml"
 
   substitutions = {
-    _REGION                        = var.region
-    _BACKEND_IMAGE                 = local.backend_image
-    _BACKEND_SERVICE_ACCOUNT_EMAIL = var.backend_service_account_email
-    _DOMAIN_NAME                   = var.domain_name
-    _ALERTING_EMAILS               = join(",", var.alerting_emails)
-    _TFSTATE_BUCKET                = var.tfstate_bucket
+    _REGION          = var.region
+    _API_IMAGE       = local.api_image
+    _API_SA_EMAIL    = var.api_sa_email
+    _DOMAIN_NAME     = var.api_domain_name
+    _ALERTING_EMAILS = join(",", var.alerting_emails)
+    _TFSTATE_BUCKET  = var.tfstate_bucket
   }
 }

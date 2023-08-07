@@ -1,7 +1,7 @@
 {
-  "name": "hellomyfriendo-backend",
+  "name": "hellomyfriendo-api",
   "version": "1.0.0",
-  "description": "Hello, My Friendo! backend",
+  "description": "Hello, My Friendo! API",
   "main": "build/src/index.js",
   "private": true,
   "types": "build/src/index.d.ts",

@@ -17,7 +17,7 @@ module "project" {
 module "iam" {
   source = "./modules/iam"
 
-  depends_on = [module.project]
+  bootstrap_kms_key_ring = module.project.bootstrap_kms_key_ring
 }
 
 module "firestore" {
@@ -31,13 +31,15 @@ module "firestore" {
 module "apps" {
   source = "./modules/apps"
 
-  region                        = var.region
-  backend_service_account_email = module.iam.backend_service_account_email
-  alerting_emails               = var.alerting_emails
-  domain_name                   = var.domain_name
-  sourcerepo_name               = var.sourcerepo_name
-  branch_name                   = var.branch_name
-  tfstate_bucket                = module.project.tfstate_bucket
+  region                           = var.region
+  cloudbuild_apps_sa_email         = module.iam.cloudbuild_apps_sa_email
+  api_sa_email                     = module.iam.api_sa_email
+  api_domain_name                  = var.api_domain_name
+  alerting_emails                  = var.alerting_emails
+  sourcerepo_name                  = var.sourcerepo_name
+  branch_name                      = var.branch_name
+  tfstate_bucket                   = module.project.tfstate_bucket
+  artifact_registry_kms_crypto_key = module.iam.artifact_registry_kms_crypto_key
 }
 
 # tfvars secret

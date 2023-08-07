@@ -106,7 +106,7 @@ resource "google_monitoring_alert_policy" "bucket_permissions_modified" {
   notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
 }
 
-resource "google_monitoring_alert_policy" "buckets_enumerated_by_service_account" {
+resource "google_monitoring_alert_policy" "buckets_enumerated_by_sa" {
   display_name = "Buckets enumerated by Service Account"
   documentation {
     content = <<EOF
@@ -351,7 +351,7 @@ resource "google_monitoring_alert_policy" "logging_sink_modified" {
   notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
 }
 
-resource "google_monitoring_alert_policy" "service_account_created" {
+resource "google_monitoring_alert_policy" "sa_created" {
   display_name = "Service Account created"
   documentation {
     content = "Contact the user who created the service account and ensure that the account is needed and that the role is scoped properly."
@@ -371,7 +371,7 @@ resource "google_monitoring_alert_policy" "service_account_created" {
   notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
 }
 
-resource "google_monitoring_alert_policy" "service_account_key_created" {
+resource "google_monitoring_alert_policy" "sa_key_created" {
   display_name = "Service Account Key created"
   documentation {
     content = "Contact the user who created the service account key to ensure they’re managing the key securely."
@@ -391,7 +391,7 @@ resource "google_monitoring_alert_policy" "service_account_key_created" {
   notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
 }
 
-resource "google_monitoring_alert_policy" "service_account_impersonation_activity_using_access_token_generation" {
+resource "google_monitoring_alert_policy" "sa_impersonation_activity_using_access_token_generation" {
   display_name = "Google Cloud Service Account Impersonation activity using access token generation"
   documentation {
     content = <<EOF
@@ -417,7 +417,7 @@ EOF
   notification_channels = google_monitoring_notification_channel.alerting_emails.*.id
 }
 
-resource "google_monitoring_alert_policy" "unauthorized_service_account_activity" {
+resource "google_monitoring_alert_policy" "unauthorized_sa_activity" {
   display_name = "Unauthorized Service Account Activity"
   documentation {
     content = <<EOF

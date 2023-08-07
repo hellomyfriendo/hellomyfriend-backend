@@ -1,8 +1,3 @@
-variable "project_id" {
-  type        = string
-  description = "The project ID."
-}
-
 variable "region" {
   type        = string
   description = "The default Google Cloud region for the created resources."
@@ -23,7 +18,7 @@ variable "api_domain_name" {
   description = "The API domain name."
 }
 
-variable "alerting_emails" {
+variable "api_external_https_lb_ip_address" {
   type        = string
-  description = "Comma-separated list of email addresses that will receive monitoring alerts."
+  description = "IP address of the API external HTTPS load balancer."
 }

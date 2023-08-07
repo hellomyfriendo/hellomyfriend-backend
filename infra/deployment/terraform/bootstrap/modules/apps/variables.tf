@@ -3,14 +3,19 @@ variable "region" {
   description = "The default Google Cloud region for the created resources."
 }
 
-variable "backend_service_account_email" {
+variable "cloudbuild_apps_sa_email" {
   type        = string
-  description = "The email of the backend service account."
+  description = "The email of the Cloud Build apps service account."
 }
 
-variable "domain_name" {
+variable "api_sa_email" {
   type        = string
-  description = "The domain name."
+  description = "The email of the API service account."
+}
+
+variable "api_domain_name" {
+  type        = string
+  description = "The API domain name."
 }
 
 variable "alerting_emails" {
@@ -31,4 +36,9 @@ variable "branch_name" {
 variable "tfstate_bucket" {
   type        = string
   description = "The GCS bucket to store the project's terraform state."
+}
+
+variable "artifact_registry_kms_crypto_key" {
+  type        = string
+  description = "The Artifact Registry KMS crypto key."
 }
