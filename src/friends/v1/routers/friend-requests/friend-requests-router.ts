@@ -89,6 +89,10 @@ class FriendRequestsRouter {
           friendRequest.toUserId
         );
 
+        await this.settings.friendRequestsService.deleteFriendRequest(
+          friendRequest.id
+        );
+
         req.log.info(friendship, `Friend Request ${friendRequestId} accepted!`);
 
         return res.json(friendship);
