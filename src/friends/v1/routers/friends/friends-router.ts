@@ -1,5 +1,4 @@
 import * as express from 'express';
-import {celebrate, Segments, Joi} from 'celebrate';
 import {StatusCodes} from 'http-status-codes';
 import {FriendsService} from '../../services';
 import {
@@ -36,52 +35,43 @@ class FriendsRouter {
       }
     });
 
-    router.delete(
-      '/:friendshipId',
-      celebrate({
-        [Segments.QUERY]: Joi.object()
-          .keys({
-            userId: Joi.string().required(),
-          })
-          .required(),
-      }),
-      async (req, res, next) => {
-        try {
-          req.log.info(req, 'Delete Friend request received');
+    router.delete('/:friendshipId', async (req, res, next) => {
+      try {
+        req.log.info(req, 'Delete Friend request received');
 
-          const user = req.user;
+        const user = req.user;
 
-          if (!user) {
-            throw new UnauthorizedError('User not found in req');
-          }
-
-          const {friendshipId} = req.params;
-
-          const friendship =
-            await this.settings.friendsService.getFriendshipById(friendshipId);
-
-          if (!friendship) {
-            throw new NotFoundError(`Friendship ${friendshipId} not found`);
-          }
-
-          if (
-            !(friendship.userId1 === user.id || friendship.userId2 === user.id)
-          ) {
-            throw new ForbiddenError(
-              `User ${user.id} cannot delete Friendship ${friendship.id}`
-            );
-          }
-
-          await this.settings.friendsService.deleteFriendship(friendship.id);
-
-          req.log.info(`Friendship ${friendship.id} deleted!`);
-
-          return res.sendStatus(StatusCodes.NO_CONTENT);
-        } catch (err) {
-          return next(err);
+        if (!user) {
+          throw new UnauthorizedError('User not found in req');
         }
+
+        const {friendshipId} = req.params;
+
+        const friendship = await this.settings.friendsService.getFriendshipById(
+          friendshipId
+        );
+
+        if (!friendship) {
+          throw new NotFoundError(`Friendship ${friendshipId} not found`);
+        }
+
+        if (
+          !(friendship.userId1 === user.id || friendship.userId2 === user.id)
+        ) {
+          throw new ForbiddenError(
+            `User ${user.id} cannot delete Friendship ${friendship.id}`
+          );
+        }
+
+        await this.settings.friendsService.deleteFriendship(friendship.id);
+
+        req.log.info(`Friendship ${friendship.id} deleted!`);
+
+        return res.sendStatus(StatusCodes.NO_CONTENT);
+      } catch (err) {
+        return next(err);
       }
-    );
+    });
 
     return router;
   }
