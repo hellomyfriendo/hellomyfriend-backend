@@ -39,7 +39,7 @@ resource "google_cloudbuild_trigger" "apps" {
     _REGION                   = var.region
     _API_IMAGE                = local.api_image
     _API_SA_EMAIL             = var.api_sa_email
-    _DOMAIN_NAME              = var.api_domain_name
+    _API_DOMAIN_NAME          = var.api_domain_name
     _MONITORING_ALERTS_EMAILS = join(",", var.monitoring_alerts_emails)
     _TFSTATE_BUCKET           = var.tfstate_bucket
   }
