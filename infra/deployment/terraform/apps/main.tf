@@ -36,6 +36,7 @@ resource "google_compute_global_address" "api_external_https_lb" {
 module "api" {
   source = "./modules/api"
 
+  org_id                           = var.org_id
   region                           = var.region
   api_image                        = var.api_image
   api_sa_email                     = var.api_sa_email

@@ -25,6 +25,16 @@ data "docker_registry_image" "api" {
   name = var.api_image
 }
 
+data "google_tags_tag_key" "all_users_ingress" {
+  parent     = "organizations/${var.org_id}"
+  short_name = "allUsersIngress"
+}
+
+data "google_tags_tag_value" "all_users_ingress" {
+  parent     = data.google_tags_tag_key.all_users_ingress.id
+  short_name = "allUsersIngress"
+}
+
 # KMS
 resource "google_kms_key_ring" "keyring" {
   name     = "api-${var.region}-key-ring"
@@ -194,7 +204,7 @@ resource "google_cloud_run_v2_service" "api" {
 
 resource "google_tags_tag_binding" "all_users_ingress" {
   parent    = "//run.googleapis.com/projects/${google_cloud_run_v2_service.api.project}/locations/${google_cloud_run_v2_service.api.location}/services/${google_cloud_run_v2_service.api.name}"
-  tag_value = "tagValues/allUsersIngress"
+  tag_value = data.google_tags_tag_value.all_users_ingress.id
 }
 
 resource "google_cloud_run_service_iam_member" "allow_unauthenticated" {

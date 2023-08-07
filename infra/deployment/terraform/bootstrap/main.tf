@@ -33,6 +33,7 @@ module "firestore" {
 module "apps" {
   source = "./modules/apps"
 
+  org_id                           = var.org_id
   region                           = var.region
   api_sa_email                     = module.iam.api_sa_email
   api_domain_name                  = var.api_domain_name

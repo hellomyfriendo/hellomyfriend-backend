@@ -21,6 +21,7 @@ steps:
       terraform apply --auto-approve
     env:
       - 'TFSTATE_BUCKET=${_TFSTATE_BUCKET}'
+      - 'TF_VAR_org_id=${_ORG_ID}'
       - 'TF_VAR_project_id=${PROJECT_ID}'
       - 'TF_VAR_region=${_REGION}'
       - 'TF_VAR_api_image=${_API_IMAGE}'

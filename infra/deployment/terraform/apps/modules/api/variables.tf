@@ -1,3 +1,8 @@
+variable "org_id" {
+  type        = string
+  description = " The numeric ID of the organization."
+}
+
 variable "region" {
   type        = string
   description = "The default Google Cloud region for the created resources."

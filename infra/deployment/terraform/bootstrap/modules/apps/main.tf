@@ -36,6 +36,7 @@ resource "google_cloudbuild_trigger" "apps" {
   filename = "infra/deployment/cloudbuild/apps/cloudbuild.yaml"
 
   substitutions = {
+    _ORG_ID                   = var.org_id
     _REGION                   = var.region
     _API_IMAGE                = local.api_image
     _API_SA_EMAIL             = var.api_sa_email
