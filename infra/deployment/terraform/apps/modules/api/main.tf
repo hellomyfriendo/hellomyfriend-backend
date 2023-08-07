@@ -192,13 +192,22 @@ resource "google_cloud_run_v2_service" "api" {
   ]
 }
 
-# resource "google_cloud_run_service_iam_member" "allow_unauthenticated" {
-#   location = google_cloud_run_v2_service.api.location
-#   project  = google_cloud_run_v2_service.api.project
-#   service  = google_cloud_run_v2_service.api.name
-#   role     = "roles/run.invoker"
-#   member   = "allUsers"
-# }
+resource "google_tags_tag_binding" "all_users_ingress" {
+  parent    = "//run.googleapis.com/projects/${google_cloud_run_v2_service.api.project}/locations/${google_cloud_run_v2_service.api.location}/services/${google_cloud_run_v2_service.api.name}"
+  tag_value = "tagValues/allUsersIngress"
+}
+
+resource "google_cloud_run_service_iam_member" "allow_unauthenticated" {
+  location = google_cloud_run_v2_service.api.location
+  project  = google_cloud_run_v2_service.api.project
+  service  = google_cloud_run_v2_service.api.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+
+  depends_on = [
+    google_tags_tag_binding.all_users_ingress
+  ]
+}
 
 # Load Balancer
 resource "google_compute_region_network_endpoint_group" "api" {
