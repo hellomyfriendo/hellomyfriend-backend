@@ -64,7 +64,9 @@ class FriendsRouter {
             throw new NotFoundError(`Friendship ${friendshipId} not found`);
           }
 
-          if (!friendship.userIds.includes(user.id)) {
+          if (
+            !(friendship.userId1 === user.id || friendship.userId2 === user.id)
+          ) {
             throw new ForbiddenError(
               `User ${user.id} cannot delete Friendship ${friendship.id}`
             );

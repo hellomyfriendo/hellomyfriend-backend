@@ -1,5 +1,6 @@
 import {
   FieldValue,
+  Filter,
   Firestore,
   FirestoreDataConverter,
 } from '@google-cloud/firestore';
@@ -18,7 +19,8 @@ const friendshipConverter: FirestoreDataConverter<Friendship> = {
 
     return {
       id: snapshot.id,
-      userIds: data.userIds,
+      userId1: data.userId1,
+      userId2: data.userId2,
       createdAt: data.createdAt.toDate(),
       deletedAt: data.deletedAt?.toDate(),
     };
@@ -115,9 +117,10 @@ class FriendsService {
 
     if (options.userId) {
       listFriendshipsQuery = listFriendshipsQuery.where(
-        'userIds',
-        'array-contains',
-        options.userId
+        Filter.or(
+          Filter.where('userId1', '==', options.userId),
+          Filter.where('userId2', '==', options.userId)
+        )
       );
     }
 
@@ -152,8 +155,8 @@ class FriendsService {
     const areFriendsQuery = await this.settings.firestore.client
       .collection(this.settings.firestore.collections.friendships)
       .where('deletedAt', '==', null)
-      .where('userIds', 'array-contains', userId1)
-      .where('userIds', 'array-contains', userId2)
+      .where('userId1', 'in', [userId1, userId2])
+      .where('userId2', 'in', [userId1, userId2])
       .limit(1)
       .get();
 

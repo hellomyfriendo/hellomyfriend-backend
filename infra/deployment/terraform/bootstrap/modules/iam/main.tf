@@ -98,6 +98,7 @@ resource "google_project_iam_custom_role" "cloudbuild_apps" {
     "run.services.listTagBindings",
     "run.services.getIamPolicy",
     "run.services.setIamPolicy",
+    "run.services.update",
     "secretmanager.secrets.create",
     "secretmanager.secrets.delete",
     "secretmanager.secrets.get",

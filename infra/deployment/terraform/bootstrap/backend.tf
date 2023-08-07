@@ -1,6 +1,6 @@
 terraform {
   backend "gcs" {
-    bucket = "ideally-constantly-driving-buck"
+    # bucket = ""
     prefix = "bootstrap"
   }
 }
