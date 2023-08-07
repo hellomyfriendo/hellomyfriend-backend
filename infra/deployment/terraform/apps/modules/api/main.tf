@@ -85,6 +85,9 @@ resource "google_secret_manager_secret" "api_key" {
     user_managed {
       replicas {
         location = var.region
+        customer_managed_encryption {
+          kms_key_name = google_kms_crypto_key.api.id
+        }
       }
     }
   }

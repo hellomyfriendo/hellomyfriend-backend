@@ -20,12 +20,21 @@ resource "google_project_iam_custom_role" "cloudbuild_apps" {
   permissions = [
     "cloudbuild.builds.create",
     "compute.backendServices.create",
+    "compute.backendServices.get",
     "compute.globalAddresses.create",
+    "compute.globalAddresses.get",
     "compute.globalForwardingRules.create",
+    "compute.globalForwardingRules.get",
     "compute.globalOperations.get",
+    "compute.sslCertificates.create",
+    "compute.sslCertificates.get",
+    "compute.urlMaps.create",
+    "compute.urlMaps.get",
     "logging.logEntries.create",
     "monitoring.alertPolicies.create",
+    "monitoring.alertPolicies.get",
     "monitoring.notificationChannels.create",
+    "monitoring.notificationChannels.get",
     "resourcemanager.projects.get",
     "secretmanager.secrets.create",
     "storage.buckets.create",
@@ -44,62 +53,6 @@ resource "google_storage_bucket_iam_member" "cloudbuild_apps_sa" {
   role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${google_service_account.cloudbuild_apps.email}"
 }
-
-# cloudnotifications.activities.list
-# monitoring.dashboards.create
-# monitoring.dashboards.delete
-# monitoring.dashboards.get
-# monitoring.dashboards.list
-# monitoring.dashboards.update
-# monitoring.groups.create
-# monitoring.groups.delete
-# monitoring.groups.get
-# monitoring.groups.list
-# monitoring.groups.update
-# monitoring.metricDescriptors.create
-# monitoring.metricDescriptors.delete
-# monitoring.metricDescriptors.get
-# monitoring.metricDescriptors.list
-# monitoring.metricsScopes.link
-# monitoring.monitoredResourceDescriptors.get
-# monitoring.monitoredResourceDescriptors.list
-# monitoring.notificationChannels.getVerificationCode
-# monitoring.notificationChannels.sendVerificationCode
-# monitoring.publicWidgets.create
-# monitoring.publicWidgets.delete
-# monitoring.publicWidgets.get
-# monitoring.publicWidgets.list
-# monitoring.publicWidgets.update
-# monitoring.services.create
-# monitoring.services.delete
-# monitoring.services.get
-# monitoring.services.list
-# monitoring.services.update
-# monitoring.slos.create
-# monitoring.slos.delete
-# monitoring.slos.get
-# monitoring.slos.list
-# monitoring.slos.update
-# monitoring.snoozes.create
-# monitoring.snoozes.get
-# monitoring.snoozes.list
-# monitoring.snoozes.update
-# monitoring.timeSeries.create
-# monitoring.timeSeries.list
-# monitoring.uptimeCheckConfigs.create
-# monitoring.uptimeCheckConfigs.delete
-# monitoring.uptimeCheckConfigs.get
-# monitoring.uptimeCheckConfigs.list
-# monitoring.uptimeCheckConfigs.update
-# opsconfigmonitoring.resourceMetadata.list
-# opsconfigmonitoring.resourceMetadata.write
-# resourcemanager.projects.get
-# resourcemanager.projects.list
-# serviceusage.services.enable
-# stackdriver.projects.edit
-# stackdriver.projects.get
-# stackdriver.resourceMetadata.list
-# stackdriver.resourceMetadata.write
 
 resource "google_project_iam_member" "cloudbuild_apps_sa" {
   project = data.google_project.project.project_id
