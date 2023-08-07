@@ -1,16 +1,16 @@
 steps:
   # API
-  # - name: 'gcr.io/cloud-builders/docker'
-  #   id: api-docker-build
-  #   args:
-  #     - 'build'
-  #     - '--tag=${_API_IMAGE}'
-  #     - '.'
-  # - name: 'gcr.io/cloud-builders/docker'
-  #   id: api-docker-push
-  #   args:
-  #     - 'push'
-  #     - '${_API_IMAGE}'
+  - name: 'gcr.io/cloud-builders/docker'
+    id: api-docker-build
+    args:
+      - 'build'
+      - '--tag=${_API_IMAGE}'
+      - '.'
+  - name: 'gcr.io/cloud-builders/docker'
+    id: api-docker-push
+    args:
+      - 'push'
+      - '${_API_IMAGE}'
   # apps
   - name: 'hashicorp/terraform'
     id: terraform-apply-apps

@@ -1,2 +1,2 @@
-export {FriendsService} from './services';
-export {FriendsRouter} from './routers';
+export {FriendsService, FriendRequestsService} from './services';
+export {FriendsRouter, FriendRequestsRouter} from './routers';

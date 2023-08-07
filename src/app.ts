@@ -13,6 +13,8 @@ import {UsersService} from './users/v1';
 import {
   FriendsRouter as FriendsRouterV1,
   FriendsService as FriendsServiceV1,
+  FriendRequestsService as FriendRequestsServiceV1,
+  FriendRequestsRouter as FriendRequestsRouterV1,
 } from './friends/v1';
 import {
   WantsRouter as WantsRouterV1,
@@ -56,6 +58,17 @@ const friendsServiceV1 = new FriendsServiceV1({
   usersService: usersServiceV1,
 });
 
+const friendRequestsServiceV1 = new FriendRequestsServiceV1({
+  firestore: {
+    client: firestore,
+    collections: {
+      friendRequests: config.friends.firestore.collections.friendRequests,
+    },
+  },
+  friendsService: friendsServiceV1,
+  usersService: usersServiceV1,
+});
+
 const wantsServiceV1 = new WantsServiceV1({
   firestore: {
     client: firestore,
@@ -79,6 +92,11 @@ const healthCheckRouter = new HealthCheckRouter().router;
 
 const friendsRouterV1 = new FriendsRouterV1({friendsService: friendsServiceV1})
   .router;
+
+const friendRequestsRouterV1 = new FriendRequestsRouterV1({
+  friendsService: friendsServiceV1,
+  friendRequestsService: friendRequestsServiceV1,
+}).router;
 
 const wantsRouterV1 = new WantsRouterV1({
   wantsService: wantsServiceV1,
@@ -130,6 +148,8 @@ app.use(
 app.use('/', healthCheckRouter);
 
 app.use('/v1/friends', friendsRouterV1);
+
+app.use('/v1/friend-requests', friendRequestsRouterV1);
 
 app.use('/v1/wants', wantsRouterV1);
 
