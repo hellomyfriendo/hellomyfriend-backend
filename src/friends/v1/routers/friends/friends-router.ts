@@ -18,7 +18,7 @@ class FriendsRouter {
   get router() {
     const router = express.Router();
 
-    router.get('/friends', async (req, res, next) => {
+    router.get('/', async (req, res, next) => {
       try {
         const user = req.user;
 
@@ -37,7 +37,7 @@ class FriendsRouter {
     });
 
     router.delete(
-      '/friends/:friendshipId',
+      '/:friendshipId',
       celebrate({
         [Segments.QUERY]: Joi.object()
           .keys({
