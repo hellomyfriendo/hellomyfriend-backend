@@ -55,6 +55,7 @@ resource "google_project_iam_custom_role" "cloudbuild_apps" {
     "monitoring.notificationChannels.delete",
     "monitoring.notificationChannels.get",
     "resourcemanager.projects.get",
+    "run.operations.get",
     "run.services.create",
     "run.services.delete",
     "run.services.get",

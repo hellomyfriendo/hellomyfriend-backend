@@ -114,10 +114,13 @@ resource "google_secret_manager_secret_iam_member" "api_key_api_sa" {
   secret_id = google_secret_manager_secret.api_key.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${var.api_sa_email}"
+
+  depends_on = [
+    google_secret_manager_secret_version.api_key
+  ]
 }
 
 # Cloud Run
-
 resource "google_cloud_run_v2_service" "api" {
   name     = "api"
   location = var.region
