@@ -196,7 +196,7 @@ module "external_https_lb" {
   name    = "api"
 
   ssl                             = true
-  managed_ssl_certificate_domains = [var.domain_name]
+  managed_ssl_certificate_domains = [var.api_domain_name]
   https_redirect                  = true
 
   backends = {
