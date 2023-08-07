@@ -69,7 +69,9 @@ resource "google_project_iam_custom_role" "cloudbuild_apps" {
     "serviceusage.apiKeys.get",
     "storage.buckets.create",
     "storage.buckets.delete",
-    "storage.buckets.get"
+    "storage.buckets.get",
+    "storage.buckets.getIamPolicy",
+    "storage.buckets.setIamPolicy"
   ]
 }
 

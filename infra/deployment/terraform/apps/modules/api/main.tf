@@ -178,7 +178,8 @@ resource "google_cloud_run_v2_service" "api" {
   }
 
   depends_on = [
-    google_secret_manager_secret_iam_member.api_key_api_sa
+    google_secret_manager_secret_iam_member.api_key_api_sa,
+    google_storage_bucket_iam_member.wants_assets_api_sa
   ]
 }
 
