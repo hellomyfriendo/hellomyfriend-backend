@@ -125,6 +125,7 @@ resource "google_cloud_run_v2_service" "api" {
 
   template {
     service_account = var.api_sa_email
+    encryption_key  = google_kms_crypto_key.api.id
 
     containers {
       image = "${var.api_image}@${data.docker_registry_image.api.sha256_digest}"

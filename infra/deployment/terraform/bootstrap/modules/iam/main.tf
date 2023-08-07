@@ -22,6 +22,8 @@ resource "google_project_iam_custom_role" "cloudbuild_apps" {
     "cloudbuild.builds.create",
     "cloudkms.cryptoKeys.create",
     "cloudkms.cryptoKeys.get",
+    "cloudkms.cryptoKeys.getIamPolicy",
+    "cloudkms.cryptoKeys.setIamPolicy",
     "cloudkms.keyRings.create",
     "cloudkms.keyRings.get",
     "compute.backendServices.create",
@@ -57,10 +59,16 @@ resource "google_project_iam_custom_role" "cloudbuild_apps" {
     "run.services.delete",
     "run.services.get",
     "secretmanager.secrets.create",
+    "secretmanager.secrets.delete",
+    "secretmanager.secrets.get",
+    "secretmanager.secrets.getIamPolicy",
+    "secretmanager.secrets.setIamPolicy",
     "serviceusage.apiKeys.create",
     "serviceusage.apiKeys.delete",
     "serviceusage.apiKeys.get",
     "storage.buckets.create",
+    "storage.buckets.delete",
+    "storage.buckets.get"
   ]
 }
 
@@ -145,6 +153,12 @@ resource "google_project_iam_member" "api_sa" {
   project = data.google_project.project.project_id
   role    = google_project_iam_custom_role.api.name
   member  = "serviceAccount:${google_service_account.api.email}"
+}
+
+resource "google_service_account_iam_member" "api_sa_cloudbuild_apps_sa" {
+  service_account_id = google_service_account.api.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.cloudbuild_apps.email}"
 }
 
 # Enable audit logs
