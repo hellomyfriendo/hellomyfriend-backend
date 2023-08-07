@@ -110,7 +110,7 @@ resource "google_secret_manager_secret" "api_key" {
 
 resource "google_secret_manager_secret_iam_member" "api_key_me" {
   secret_id = google_secret_manager_secret.api_key.secret_id
-  role      = "roles/secretmanager.secretVersionManager"
+  role      = "roles/secretmanager.admin"
   member    = "serviceAccount:${data.google_client_openid_userinfo.me.email}"
 }
 
