@@ -13,9 +13,14 @@ variable "all_users_ingress_tag_value" {
   description = "The allUsersIngress tag value short name."
 }
 
-variable "bootstrap_kms_key_ring" {
+variable "artifact_registry_kms_crypto_key" {
   type        = string
-  description = "The bootstrap KMS key ring."
+  description = "The Artifact Registry KMS crypto key."
+}
+
+variable "terraform_tfvars_secret_kms_crypto_key" {
+  type        = string
+  description = "The terraform tfvars secret KMS crypto key."
 }
 
 variable "sourcerepo_name" {

@@ -1,7 +1,7 @@
-output "tfstate_bucket" {
-  value = module.project.tfstate_bucket
+output "terraform_tfvars" {
+  value = google_secret_manager_secret.terraform_tfvars.id
 }
 
-output "tfvars_secret" {
-  value = google_secret_manager_secret.tfvars.secret_id
+output "tfstate_bucket" {
+  value = google_storage_bucket.tfstate.name
 }
