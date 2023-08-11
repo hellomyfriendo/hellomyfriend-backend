@@ -1,18 +1,19 @@
 steps:
   # API
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: "gcr.io/cloud-builders/docker"
     id: api-docker-build
     args:
-      - 'build'
-      - '--tag=${_API_IMAGE}'
-      - '.'
-  - name: 'gcr.io/cloud-builders/docker'
+      - "build"
+      - "--tag=${_API_IMAGE}"
+      - "."
+    dir: api
+  - name: "gcr.io/cloud-builders/docker"
     id: api-docker-push
     args:
-      - 'push'
-      - '${_API_IMAGE}'
+      - "push"
+      - "${_API_IMAGE}"
   # apps
-  - name: 'hashicorp/terraform'
+  - name: "hashicorp/terraform"
     id: terraform-apply-apps
     dir: infra/deployment/terraform/apps
     script: |
@@ -20,14 +21,14 @@ steps:
 
       terraform apply --auto-approve
     env:
-      - 'TFSTATE_BUCKET=${_TFSTATE_BUCKET}'
-      - 'TF_VAR_org_id=${_ORG_ID}'
-      - 'TF_VAR_all_users_ingress_tag_value_id=${_ALL_USERS_INGRESS_TAG_VALUE_ID}'
-      - 'TF_VAR_project_id=${PROJECT_ID}'
-      - 'TF_VAR_region=${_REGION}'
-      - 'TF_VAR_api_image=${_API_IMAGE}'
-      - 'TF_VAR_api_sa_email=${_API_SA_EMAIL}'
-      - 'TF_VAR_api_domain_name=${_API_DOMAIN_NAME}'
-      - 'TF_VAR_monitoring_alerts_emails=${_MONITORING_ALERTS_EMAILS}'
+      - "TFSTATE_BUCKET=${_TFSTATE_BUCKET}"
+      - "TF_VAR_org_id=${_ORG_ID}"
+      - "TF_VAR_all_users_ingress_tag_value_id=${_ALL_USERS_INGRESS_TAG_VALUE_ID}"
+      - "TF_VAR_project_id=${PROJECT_ID}"
+      - "TF_VAR_region=${_REGION}"
+      - "TF_VAR_api_image=${_API_IMAGE}"
+      - "TF_VAR_api_sa_email=${_API_SA_EMAIL}"
+      - "TF_VAR_api_domain_name=${_API_DOMAIN_NAME}"
+      - "TF_VAR_monitoring_alerts_emails=${_MONITORING_ALERTS_EMAILS}"
 options:
   logging: CLOUD_LOGGING_ONLY
