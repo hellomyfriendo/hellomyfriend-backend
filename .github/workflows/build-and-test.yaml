@@ -1,4 +1,4 @@
-name: 'Build and test'
+name: "Build and test"
 
 on:
   push:
@@ -10,7 +10,9 @@ on:
 jobs:
   api-build-and-test:
     runs-on: ubuntu-latest
-    working-directory: api
+    defaults:
+      run:
+        working-directory: api
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3

@@ -1,5 +1,8 @@
 class GeolocationCoordinates {
-  constructor(public latitude: number, public longitude: number) {}
+  constructor(
+    public latitude: number,
+    public longitude: number
+  ) {}
 
   static minLatitude = 0;
   static maxLatitude = 90;
