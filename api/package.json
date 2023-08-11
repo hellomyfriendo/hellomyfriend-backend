@@ -20,7 +20,7 @@
     "fix": "gts fix",
     "dev": "ts-node-dev -r dotenv-expand/config src/index.ts",
     "start": "docker compose up --build",
-    "prepare": "npm run compile && husky install",
+    "prepare": "npm run compile",
     "pretest": "npm run compile",
     "posttest": "npm run lint"
   },
