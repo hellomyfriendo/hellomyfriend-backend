@@ -6,6 +6,7 @@ steps:
       - 'build'
       - '--tag=${_API_IMAGE}'
       - '.'
+    dir: api
   - name: 'gcr.io/cloud-builders/docker'
     id: api-docker-push
     args:
