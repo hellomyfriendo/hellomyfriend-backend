@@ -1,10 +1,12 @@
 import {
+  FieldValue,
   Firestore,
   FirestoreDataConverter,
-  Timestamp,
 } from '@google-cloud/firestore';
+import {LanguageServiceClient} from '@google-cloud/language';
 import {Storage} from '@google-cloud/storage';
-import {Client} from '@googlemaps/google-maps-services-js';
+import {ImageAnnotatorClient} from '@google-cloud/vision';
+import {Client, GeocodeResult} from '@googlemaps/google-maps-services-js';
 import dayjs from 'dayjs';
 import {geohashForLocation, distanceBetween} from 'geofire-common';
 import {orderBy} from 'lodash';
@@ -89,11 +91,17 @@ interface WantsServiceSettings {
       wants: string;
     };
   };
+  language: {
+    client: LanguageServiceClient;
+  };
   storage: {
     client: Storage;
     buckets: {
       wantsAssets: string;
     };
+  };
+  vision: {
+    imageAnnotatorClient: ImageAnnotatorClient;
   };
   googleApiKey: string;
   googleMapsServicesClient: Client;
@@ -137,11 +145,15 @@ class WantsService {
       throw new NotFoundError(`Creator id ${options.creator} not found`);
     }
 
+    await this.validateWantTitle(options.title);
+
+    if (options.description) {
+      await this.validateWantTitle(options.description);
+    }
+
     const wantDocVisibility = await this.getWantDocVisibility(
       options.visibility
     );
-
-    const now = new Date();
 
     const wantDocRef = await this.settings.firestore.client
       .collection(this.settings.firestore.collections.wants)
@@ -153,8 +165,8 @@ class WantsService {
         description: options.description,
         visibility: wantDocVisibility,
         image: null,
-        createdAt: Timestamp.fromDate(now),
-        updatedAt: Timestamp.fromDate(now),
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
         deletedAt: null,
       });
 
@@ -214,18 +226,26 @@ class WantsService {
 
     await this.settings.firestore.client.runTransaction(async t => {
       if (updateWantOptions.adminsIds) {
+        await this.validateWantAdminsIds(updateWantOptions.adminsIds);
+
         wantData.adminsIds = updateWantOptions.adminsIds;
       }
 
       if (updateWantOptions.membersIds) {
+        await this.validateWantMembersIds(updateWantOptions.membersIds);
+
         wantData.membersIds = updateWantOptions.membersIds;
       }
 
       if (updateWantOptions.title) {
+        await this.validateWantTitle(updateWantOptions.title);
+
         wantData.title = updateWantOptions.title;
       }
 
       if (updateWantOptions.description) {
+        await this.validateWantDescription(updateWantOptions.description);
+
         wantData.description = updateWantOptions.description;
       }
 
@@ -246,7 +266,7 @@ class WantsService {
 
       t.update(wantDocRef, {
         ...wantData,
-        updatedAt: Timestamp.now(),
+        updatedAt: FieldValue.serverTimestamp(),
       });
     });
 
@@ -304,7 +324,7 @@ class WantsService {
 
     // TODO(Marcus): This could be an interesting place to use machine learning. Maybe have it receive the userId too so the feed can be tailored.
     const calculateFeedScore = (options: CalculateFeedScoreOptions): number => {
-      const calculateVisibilityScore = (wantDoc: WantDoc) => {
+      const calculateVisibilityScore = (wantDoc: WantDoc): number => {
         switch (wantDoc.visibility.visibleTo) {
           case WantVisibleTo.Friends:
             return -0.2;
@@ -315,7 +335,7 @@ class WantsService {
         }
       };
 
-      const calculateCreatedAtScore = (want: WantDoc) => {
+      const calculateCreatedAtScore = (want: WantDoc): number => {
         const today = dayjs();
         const createdAtDate = dayjs(want.createdAt);
 
@@ -331,7 +351,7 @@ class WantsService {
         }
       };
 
-      const calculateMembersCountScore = (want: WantDoc) => {
+      const calculateMembersCountScore = (want: WantDoc): number => {
         const membersCount = want.membersIds.length;
 
         if (membersCount > 4) {
@@ -346,7 +366,7 @@ class WantsService {
       const calculateLocationScore = (
         wantDoc: WantDoc,
         userGeolocationCoordinates?: GeolocationCoordinates
-      ) => {
+      ): number => {
         if (!wantDoc.visibility.location) {
           return 0;
         }
@@ -420,7 +440,7 @@ class WantsService {
     );
   }
 
-  private async toWant(wantDoc: WantDoc) {
+  private async toWant(wantDoc: WantDoc): Promise<Want> {
     const want: Want = {
       id: wantDoc.id,
       creatorId: wantDoc.creatorId,
@@ -447,11 +467,10 @@ class WantsService {
       const [signedUrl] = await this.settings.storage.client
         .bucket(wantDoc.image.gcs.bucket)
         .file(wantDoc.image.gcs.fileName)
-        .publicUrl();
-      // .getSignedUrl({
-      //   action: 'read',
-      //   expires: dayjs().add(1, 'hour').toDate(),
-      // });
+        .getSignedUrl({
+          action: 'read',
+          expires: dayjs().add(1, 'hour').toDate(),
+        });
 
       want.image = {
         url: signedUrl,
@@ -496,23 +515,11 @@ class WantsService {
     return wantDocVisibility;
   }
 
-  private async geocodeAddress(address: string) {
-    const geocodeAddressResponse =
-      await this.settings.googleMapsServicesClient.geocode({
-        params: {
-          address,
-          key: this.settings.googleApiKey,
-        },
-      });
-
-    return geocodeAddressResponse.data.results[0];
-  }
-
   private async uploadWantImage(
     wantId: string,
     // TODO(Marcus): Check mimeType from Buffer? Could use https://github.com/sindresorhus/file-type but converting this project to ESM seems a bit of a hassle at this point.
     image: {data: Buffer; mimeType: string}
-  ) {
+  ): Promise<WantDocImage> {
     const want = await this.getWantById(wantId);
 
     if (!want) {
@@ -536,6 +543,8 @@ class WantsService {
       );
     }
 
+    await this.validateWantImage(image.data);
+
     const fileName = `images/${wantId}.${mime.extension(image.mimeType)}`;
 
     const gcsFile = this.settings.storage.client
@@ -552,6 +561,148 @@ class WantsService {
     };
 
     return wantDocImage;
+  }
+
+  private async geocodeAddress(address: string): Promise<GeocodeResult> {
+    const geocodeAddressResponse =
+      await this.settings.googleMapsServicesClient.geocode({
+        params: {
+          address,
+          key: this.settings.googleApiKey,
+        },
+      });
+
+    return geocodeAddressResponse.data.results[0];
+  }
+
+  private async detectTextExplicitContentCategory(
+    text: string
+  ): Promise<string | undefined> {
+    const [moderateTextResult] =
+      await this.settings.language.client.moderateText({
+        document: {
+          type: 'PLAIN_TEXT',
+          content: text,
+        },
+      });
+
+    if (!moderateTextResult.moderationCategories) {
+      return;
+    }
+
+    const confidenceThreshold = 0.6;
+
+    for (const moderationCategory of moderateTextResult.moderationCategories) {
+      if (!moderationCategory.name) {
+        continue;
+      }
+
+      if (!moderationCategory.confidence) {
+        continue;
+      }
+
+      if (moderationCategory.confidence > confidenceThreshold) {
+        return moderationCategory.name;
+      }
+    }
+
+    return;
+  }
+
+  private async detectImageExplicitContentCategory(
+    imageData: Buffer
+  ): Promise<string | undefined> {
+    const [safeSearchDetectionResult] =
+      await this.settings.vision.imageAnnotatorClient.safeSearchDetection(
+        imageData
+      );
+
+    const detections = safeSearchDetectionResult.safeSearchAnnotation;
+
+    if (!detections) {
+      return;
+    }
+
+    if (detections.adult === 'LIKELY' || detections.adult === 'VERY_LIKELY') {
+      return 'Adult';
+    }
+
+    if (
+      detections.medical === 'LIKELY' ||
+      detections.medical === 'VERY_LIKELY'
+    ) {
+      return 'Medical';
+    }
+
+    if (detections.racy === 'LIKELY' || detections.racy === 'VERY_LIKELY') {
+      return 'Racy';
+    }
+
+    if (detections.spoof === 'LIKELY' || detections.spoof === 'VERY_LIKELY') {
+      return 'Spoof';
+    }
+
+    if (
+      detections.violence === 'LIKELY' ||
+      detections.violence === 'VERY_LIKELY'
+    ) {
+      return 'Violence';
+    }
+
+    return;
+  }
+
+  private async validateWantAdminsIds(adminsIds: string[]) {
+    for (const adminId of adminsIds) {
+      const adminUser = await this.settings.usersService.getUserById(adminId);
+
+      if (!adminUser) {
+        throw new NotFoundError(`User ${adminId} not found`);
+      }
+    }
+  }
+
+  private async validateWantMembersIds(membersIds: string[]) {
+    for (const memberId of membersIds) {
+      const memberUser = await this.settings.usersService.getUserById(memberId);
+
+      if (!memberUser) {
+        throw new NotFoundError(`User ${memberId} not found`);
+      }
+    }
+  }
+
+  private async validateWantTitle(text: string) {
+    const explicitContentCategory =
+      await this.detectTextExplicitContentCategory(text);
+
+    if (explicitContentCategory) {
+      throw new RangeError(
+        `${explicitContentCategory} detected in title. Explicit content is not allowed.`
+      );
+    }
+  }
+
+  private async validateWantDescription(text: string) {
+    const explicitContentCategory =
+      await this.detectTextExplicitContentCategory(text);
+
+    if (explicitContentCategory) {
+      throw new RangeError(
+        `${explicitContentCategory} detected in description. Explicit content is not allowed.`
+      );
+    }
+  }
+
+  private async validateWantImage(imageData: Buffer) {
+    const explicitContentCategory =
+      await this.detectImageExplicitContentCategory(imageData);
+
+    if (explicitContentCategory) {
+      throw new RangeError(
+        `${explicitContentCategory} content detected. Explicit content is not allowed. `
+      );
+    }
   }
 }
 

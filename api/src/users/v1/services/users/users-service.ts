@@ -1,7 +1,7 @@
 import {
+  FieldValue,
   Firestore,
   FirestoreDataConverter,
-  Timestamp,
 } from '@google-cloud/firestore';
 import {User} from '../../models';
 import {AlreadyExistsError} from '../../../../errors';
@@ -54,13 +54,11 @@ class UsersService {
       );
     }
 
-    const now = new Date();
-
     const userDocRef = await this.settings.firestore.client
       .collection(this.settings.firestore.collections.users)
       .add({
         uid: options.firebaseUid,
-        createdAt: Timestamp.fromDate(now),
+        createdAt: FieldValue.serverTimestamp(),
       });
 
     const user = await this.getUserById(userDocRef.id);
