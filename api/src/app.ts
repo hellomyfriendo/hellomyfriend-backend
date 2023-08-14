@@ -4,7 +4,9 @@ import pinoHttp from 'pino-http';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
 import {Firestore} from '@google-cloud/firestore';
+import {LanguageServiceClient} from '@google-cloud/language';
 import {Storage} from '@google-cloud/storage';
+import {ImageAnnotatorClient} from '@google-cloud/vision';
 import {Client} from '@googlemaps/google-maps-services-js';
 import {initializeApp} from 'firebase-admin/app';
 import * as firebaseAdmin from 'firebase-admin';
@@ -34,7 +36,15 @@ const firestore = new Firestore({
   ignoreUndefinedProperties: true,
 });
 
+const languageServiceClient = new LanguageServiceClient({
+  projectId: config.google.projectId,
+});
+
 const storage = new Storage({
+  projectId: config.google.projectId,
+});
+
+const imageAnnotatorClient = new ImageAnnotatorClient({
   projectId: config.google.projectId,
 });
 
@@ -77,11 +87,17 @@ const wantsServiceV1 = new WantsServiceV1({
       wants: config.wants.firestore.collections.wants,
     },
   },
+  language: {
+    client: languageServiceClient,
+  },
   storage: {
     client: storage,
     buckets: {
       wantsAssets: config.wants.storage.buckets.wantsAssets,
     },
+  },
+  vision: {
+    imageAnnotatorClient,
   },
   googleMapsServicesClient,
   googleApiKey: config.google.apiKey,

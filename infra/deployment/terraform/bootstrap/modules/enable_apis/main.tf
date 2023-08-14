@@ -10,11 +10,13 @@ locals {
     "firestore.googleapis.com",
     "geocoding-backend.googleapis.com",
     "iam.googleapis.com",
+    "language.googleapis.com",
     "maps-backend.googleapis.com",
     "run.googleapis.com",
     "secretmanager.googleapis.com",
     "serviceusage.googleapis.com",
-    "sourcerepo.googleapis.com"
+    "sourcerepo.googleapis.com",
+    "vision.googleapis.com"
   ]
 }
 
