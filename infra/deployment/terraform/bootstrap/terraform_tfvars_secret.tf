@@ -7,7 +7,7 @@ resource "google_secret_manager_secret" "terraform_tfvars" {
         location = var.region
 
         customer_managed_encryption {
-          kms_key_name = module.kms.terraform_tfvars_secret_kms_crypto_key
+          kms_key_name = module.kms.confidential_kms_crypto_key
         }
       }
     }

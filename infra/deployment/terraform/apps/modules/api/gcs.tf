@@ -11,7 +11,7 @@ resource "google_storage_bucket" "wants_assets" {
   uniform_bucket_level_access = true
 
   encryption {
-    default_kms_key_name = google_kms_crypto_key.api.id
+    default_kms_key_name = var.confidential_kms_crypto_key
   }
 
   depends_on = [

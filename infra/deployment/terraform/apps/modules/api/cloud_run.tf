@@ -18,7 +18,7 @@ resource "google_cloud_run_v2_service" "api" {
 
   template {
     service_account = var.api_sa_email
-    encryption_key  = google_kms_crypto_key.api.id
+    encryption_key  = var.confidential_kms_crypto_key
 
     containers {
       image = "${var.api_image}@${data.docker_registry_image.api.sha256_digest}"
@@ -68,7 +68,6 @@ resource "google_cloud_run_v2_service" "api" {
   }
 
   depends_on = [
-    google_kms_crypto_key_iam_member.cloud_run_service_agent_api,
     google_secret_manager_secret_iam_member.api_key_api_sa,
     google_storage_bucket_iam_member.wants_assets_api_sa
   ]

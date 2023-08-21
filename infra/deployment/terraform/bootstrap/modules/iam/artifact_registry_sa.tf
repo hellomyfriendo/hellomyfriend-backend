@@ -9,8 +9,8 @@ resource "null_resource" "artifact_registry_sa" {
   }
 }
 
-resource "google_kms_crypto_key_iam_member" "artifact_registry_sa" {
-  crypto_key_id = var.artifact_registry_kms_crypto_key
+resource "google_kms_crypto_key_iam_member" "artifact_registry_sa_confidential" {
+  crypto_key_id = var.confidential_kms_crypto_key
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:${local.artifact_registry_sa}"
 

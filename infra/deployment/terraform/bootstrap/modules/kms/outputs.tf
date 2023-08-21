@@ -1,11 +1,15 @@
-output "artifact_registry_kms_crypto_key" {
-  value = google_kms_crypto_key.artifact_registry.id
+output "public_kms_crypto_key" {
+  value = google_kms_crypto_key.public.id
 }
 
-output "terraform_tfvars_secret_kms_crypto_key" {
-  value = google_kms_crypto_key.terraform_tfvars_secret.id
+output "internal_kms_crypto_key" {
+  value = google_kms_crypto_key.internal.id
 }
 
-output "tfstate_bucket_kms_crypto_key" {
-  value = google_kms_crypto_key.tfstate_bucket.id
+output "confidential_kms_crypto_key" {
+  value = google_kms_crypto_key.confidential.id
+}
+
+output "restricted_kms_crypto_key" {
+  value = google_kms_crypto_key.restricted.id
 }
