@@ -1,3 +1,6 @@
+data "google_project" "project" {
+}
+
 resource "google_compute_region_network_endpoint_group" "api" {
   name                  = "api"
   network_endpoint_type = "SERVERLESS"

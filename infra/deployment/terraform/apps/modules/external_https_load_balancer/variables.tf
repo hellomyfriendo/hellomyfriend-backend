@@ -1,3 +1,8 @@
+variable "region" {
+  type        = string
+  description = "The default Google Cloud region for the created resources."
+}
+
 variable "ip_address" {
   type        = string
   description = "IP address of the API external HTTPS load balancer."
