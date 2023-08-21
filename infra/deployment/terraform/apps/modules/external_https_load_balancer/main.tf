@@ -3,7 +3,7 @@ resource "google_compute_region_network_endpoint_group" "api" {
   network_endpoint_type = "SERVERLESS"
   region                = var.region
   cloud_run {
-    service = google_cloud_run_v2_service.api.name
+    service = var.api_service_name
   }
 }
 

@@ -29,18 +29,24 @@ module "monitoring" {
   monitoring_alerts_emails = local.monitoring_alerts_emails_list
 }
 
-resource "google_compute_global_address" "api_external_https_lb" {
-  name = "api-external-https-lb"
-}
-
 module "api" {
   source = "./modules/api"
 
-  org_id                           = var.org_id
-  all_users_ingress_tag_value_id   = var.all_users_ingress_tag_value_id
-  region                           = var.region
-  api_image                        = var.api_image
-  api_sa_email                     = var.api_sa_email
-  api_domain_name                  = var.api_domain_name
-  api_external_https_lb_ip_address = google_compute_global_address.api_external_https_lb.address
+  org_id                         = var.org_id
+  all_users_ingress_tag_value_id = var.all_users_ingress_tag_value_id
+  region                         = var.region
+  api_image                      = var.api_image
+  api_sa_email                   = var.api_sa_email
+}
+
+resource "google_compute_global_address" "external_https_load_balancer" {
+  name = "external-https-lb"
+}
+
+module "external_https_load_balancer" {
+  source = "./modules/external_https_load_balancer"
+
+  ip_address       = google_compute_global_address.external_https_load_balancer.address
+  api_domain_name  = var.api_domain_name
+  api_service_name = module.api.service_name
 }
