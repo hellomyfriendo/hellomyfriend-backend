@@ -8,10 +8,14 @@ data "google_tags_tag_value" "all_users_ingress" {
   short_name = var.all_users_ingress_tag_value
 }
 
+data "google_service_account" "cloudbuild_apps" {
+  account_id = var.cloudbuild_apps_sa_email
+}
+
 resource "google_cloudbuild_trigger" "apps" {
   name            = "apps"
   description     = "Build and deploy the apps"
-  service_account = "projects/${data.google_project.project.project_id}/serviceAccounts/${var.cloudbuild_apps_sa_email}"
+  service_account = data.google_service_account.cloudbuild_apps.id
 
   trigger_template {
     repo_name   = var.sourcerepo_name
