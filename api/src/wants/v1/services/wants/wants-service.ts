@@ -590,10 +590,15 @@ class WantsService {
       return;
     }
 
-    const confidenceThreshold = 0.6;
+    const confidenceThreshold = 0.8;
+    const excludedCategories = ['Health', 'Legal', 'Religion & Belief'];
 
     for (const moderationCategory of moderateTextResult.moderationCategories) {
       if (!moderationCategory.name) {
+        continue;
+      }
+
+      if (excludedCategories.includes(moderationCategory.name)) {
         continue;
       }
 
@@ -678,7 +683,7 @@ class WantsService {
 
     if (explicitContentCategory) {
       throw new RangeError(
-        `${explicitContentCategory} detected in title. Explicit content is not allowed.`
+        `${explicitContentCategory} detected in title: ${text}. Explicit content is not allowed.`
       );
     }
   }
@@ -689,7 +694,7 @@ class WantsService {
 
     if (explicitContentCategory) {
       throw new RangeError(
-        `${explicitContentCategory} detected in description. Explicit content is not allowed.`
+        `${explicitContentCategory} detected in description: ${text}. Explicit content is not allowed.`
       );
     }
   }

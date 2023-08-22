@@ -28,6 +28,11 @@ variable "api_domain_name" {
   description = "The API domain name."
 }
 
+variable "developers_group_email" {
+  type        = string
+  description = "Developers group email."
+}
+
 variable "monitoring_alerts_emails" {
   type        = list(string)
   description = "Email addresses that will receive monitoring alerts."

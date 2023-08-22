@@ -11,12 +11,8 @@ resource "google_storage_bucket" "wants_assets" {
   uniform_bucket_level_access = true
 
   encryption {
-    default_kms_key_name = google_kms_crypto_key.api.id
+    default_kms_key_name = var.confidential_kms_crypto_key
   }
-
-  depends_on = [
-    google_kms_crypto_key_iam_member.gcs_sa_api
-  ]
 }
 
 resource "google_storage_bucket_iam_member" "wants_assets_api_sa" {

@@ -17,15 +17,11 @@ resource "google_secret_manager_secret" "api_key" {
       replicas {
         location = var.region
         customer_managed_encryption {
-          kms_key_name = google_kms_crypto_key.api.id
+          kms_key_name = var.confidential_kms_crypto_key
         }
       }
     }
   }
-
-  depends_on = [
-    google_kms_crypto_key_iam_member.secret_manager_service_agent_identity_api
-  ]
 }
 
 resource "google_secret_manager_secret_version" "api_key" {

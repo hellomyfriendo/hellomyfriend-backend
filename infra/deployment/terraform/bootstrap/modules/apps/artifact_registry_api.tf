@@ -7,7 +7,7 @@ resource "google_artifact_registry_repository" "api" {
   location      = var.region
   repository_id = "api"
   format        = "DOCKER"
-  kms_key_name  = var.artifact_registry_kms_crypto_key
+  kms_key_name  = var.confidential_kms_crypto_key
 }
 
 resource "google_artifact_registry_repository_iam_member" "api_cloudbuild_apps_sa" {

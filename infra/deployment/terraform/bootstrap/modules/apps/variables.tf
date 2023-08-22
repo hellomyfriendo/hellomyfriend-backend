@@ -18,9 +18,24 @@ variable "region" {
   description = "The default Google Cloud region for the created resources."
 }
 
-variable "artifact_registry_kms_crypto_key" {
+variable "public_kms_crypto_key" {
   type        = string
-  description = "The Artifact Registry KMS crypto key."
+  description = "The Public KMS crypto key."
+}
+
+variable "internal_kms_crypto_key" {
+  type        = string
+  description = "The Internal KMS crypto key."
+}
+
+variable "confidential_kms_crypto_key" {
+  type        = string
+  description = "The Confidential KMS crypto key."
+}
+
+variable "restricted_kms_crypto_key" {
+  type        = string
+  description = "The Confidential KMS crypto key."
 }
 
 variable "api_sa_email" {

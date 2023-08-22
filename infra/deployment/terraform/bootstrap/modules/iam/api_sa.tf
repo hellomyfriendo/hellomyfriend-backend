@@ -39,3 +39,9 @@ resource "google_service_account_iam_member" "api_sa_cloudbuild_apps_sa" {
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:${google_service_account.cloudbuild_apps.email}"
 }
+
+resource "google_service_account_iam_member" "api_sa_developers_group" {
+  service_account_id = google_service_account.api.name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "group:${var.developers_group_email}"
+}

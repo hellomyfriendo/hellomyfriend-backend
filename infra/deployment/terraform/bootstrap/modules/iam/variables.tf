@@ -13,14 +13,29 @@ variable "all_users_ingress_tag_value" {
   description = "The allUsersIngress tag value short name."
 }
 
-variable "artifact_registry_kms_crypto_key" {
+variable "public_kms_crypto_key" {
   type        = string
-  description = "The Artifact Registry KMS crypto key."
+  description = "The Public KMS crypto key."
 }
 
-variable "terraform_tfvars_secret_kms_crypto_key" {
+variable "internal_kms_crypto_key" {
   type        = string
-  description = "The terraform tfvars secret KMS crypto key."
+  description = "The Internal KMS crypto key."
+}
+
+variable "confidential_kms_crypto_key" {
+  type        = string
+  description = "The Confidential KMS crypto key."
+}
+
+variable "restricted_kms_crypto_key" {
+  type        = string
+  description = "The Confidential KMS crypto key."
+}
+
+variable "developers_group_email" {
+  type        = string
+  description = "Developers group email."
 }
 
 variable "sourcerepo_name" {
