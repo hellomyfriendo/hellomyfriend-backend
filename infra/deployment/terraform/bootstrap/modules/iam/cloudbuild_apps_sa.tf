@@ -105,16 +105,16 @@ resource "google_project_iam_custom_role" "cloudbuild_apps" {
   ]
 }
 
-resource "google_storage_bucket_iam_member" "cloudbuild_apps_sa_tfstate_bucket" {
-  bucket = var.tfstate_bucket
-  role   = "roles/storage.objectAdmin"
-  member = "serviceAccount:${google_service_account.cloudbuild_apps.email}"
-}
-
 resource "google_project_iam_member" "cloudbuild_apps_sa" {
   project = data.google_project.project.project_id
   role    = google_project_iam_custom_role.cloudbuild_apps.name
   member  = "serviceAccount:${google_service_account.cloudbuild_apps.email}"
+}
+
+resource "google_storage_bucket_iam_member" "cloudbuild_apps_sa_tfstate_bucket" {
+  bucket = var.tfstate_bucket
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.cloudbuild_apps.email}"
 }
 
 resource "google_sourcerepo_repository_iam_member" "cloudbuild_apps_sa" {
