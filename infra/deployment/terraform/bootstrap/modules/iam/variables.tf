@@ -33,6 +33,11 @@ variable "restricted_kms_crypto_key" {
   description = "The Confidential KMS crypto key."
 }
 
+variable "developers_group_email" {
+  type        = string
+  description = "Developers group email."
+}
+
 variable "sourcerepo_name" {
   type        = string
   description = "The Cloud Source Repository name."

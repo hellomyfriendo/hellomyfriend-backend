@@ -34,6 +34,7 @@ module "iam" {
   internal_kms_crypto_key     = module.kms.internal_kms_crypto_key
   confidential_kms_crypto_key = module.kms.confidential_kms_crypto_key
   restricted_kms_crypto_key   = module.kms.restricted_kms_crypto_key
+  developers_group_email      = var.developers_group_email
   sourcerepo_name             = var.sourcerepo_name
   tfstate_bucket              = google_storage_bucket.tfstate.name
 }

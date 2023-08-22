@@ -1,3 +1,4 @@
+import axios from 'axios';
 import {faker} from '@faker-js/faker';
 import {usersServiceV1, friendsServiceV1, wantsServiceV1} from '../../src/app';
 import {WantVisibleTo} from '../../src/wants/v1/models';
@@ -85,7 +86,7 @@ async function createFriendshipIfNotExist(userId1: string, userId2: string) {
 }
 
 async function createRegularQuebecStFoy1Wants(users: Users) {
-  wantsServiceV1.createWant({
+  const publicWant = await wantsServiceV1.createWant({
     creator: users.regularQuebecStFoy1.id!,
     title: 'regularQuebecStFoy1 - Public',
     description: faker.lorem.paragraphs(),
@@ -94,7 +95,9 @@ async function createRegularQuebecStFoy1Wants(users: Users) {
     },
   });
 
-  await wantsServiceV1.createWant({
+  await uploadWantImage(publicWant.id);
+
+  const friendsWant = await wantsServiceV1.createWant({
     creator: users.regularQuebecStFoy1.id!,
     title: 'regularQuebecStFoy1 - Friends',
     description: faker.lorem.paragraphs(),
@@ -103,7 +106,9 @@ async function createRegularQuebecStFoy1Wants(users: Users) {
     },
   });
 
-  await wantsServiceV1.createWant({
+  await uploadWantImage(friendsWant.id);
+
+  const regularQuebecStFoy2Want = await wantsServiceV1.createWant({
     creator: users.regularQuebecStFoy1.id!,
     title: 'regularQuebecStFoy1 - [regularQuebecStFoy2]',
     description: faker.lorem.paragraphs(),
@@ -111,10 +116,12 @@ async function createRegularQuebecStFoy1Wants(users: Users) {
       visibleTo: [users.regularQuebecStFoy2.id!],
     },
   });
+
+  await uploadWantImage(regularQuebecStFoy2Want.id);
 }
 
 async function createRegularQuebecStFoy2Wants(users: Users) {
-  wantsServiceV1.createWant({
+  const publicWant = await wantsServiceV1.createWant({
     creator: users.regularQuebecStFoy1.id!,
     title: 'regularQuebecStFoy2 - Public',
     description: faker.lorem.paragraphs(),
@@ -123,7 +130,9 @@ async function createRegularQuebecStFoy2Wants(users: Users) {
     },
   });
 
-  await wantsServiceV1.createWant({
+  await uploadWantImage(publicWant.id);
+
+  const friendsWant = await wantsServiceV1.createWant({
     creator: users.regularQuebecStFoy1.id!,
     title: 'regularQuebecStFoy2 - Friends',
     description: faker.lorem.paragraphs(),
@@ -132,12 +141,31 @@ async function createRegularQuebecStFoy2Wants(users: Users) {
     },
   });
 
-  await wantsServiceV1.createWant({
+  await uploadWantImage(friendsWant.id);
+
+  const regularQuebecStFoy1Want = await wantsServiceV1.createWant({
     creator: users.regularQuebecStFoy1.id!,
     title: 'regularQuebecStFoy2 - [regularQuebecStFoy1]',
     description: faker.lorem.paragraphs(),
     visibility: {
-      visibleTo: [users.regularQuebecStFoy2.id!],
+      visibleTo: [users.regularQuebecStFoy1.id!],
+    },
+  });
+
+  await uploadWantImage(regularQuebecStFoy1Want.id);
+}
+
+async function uploadWantImage(wantId: string) {
+  const getImageUrl = 'https://picsum.photos/200.jpg';
+
+  const getImageResponse = await axios.get(getImageUrl);
+
+  const imageData = Buffer.from(getImageResponse.data, 'binary');
+
+  await wantsServiceV1.updateWantById(wantId, {
+    image: {
+      data: imageData,
+      mimeType: 'image/jpeg',
     },
   });
 }

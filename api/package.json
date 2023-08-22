@@ -52,6 +52,7 @@
     "@google-cloud/vision": "^4.0.1",
     "@googlemaps/google-maps-services-js": "^3.3.34",
     "@relaycorp/pino-cloud": "^1.0.28",
+    "axios": "^1.4.0",
     "celebrate": "^15.0.1",
     "cors": "^2.8.5",
     "dayjs": "^1.11.9",
