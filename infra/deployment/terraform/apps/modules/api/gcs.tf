@@ -1,7 +1,9 @@
+resource "random_uuid" "wants_assets_bucket" {
+}
+
 resource "google_storage_bucket" "wants_assets" {
-  name          = uuid()
+  name          = random_uuid.wants_assets_bucket.result
   location      = var.region
-  force_destroy = true
 
   uniform_bucket_level_access = true
 
