@@ -1,12 +1,7 @@
-locals {
-  api_sa_bucket_roles = [
-    "roles/storage.objectAdmin",
-  ]
-}
-
 resource "google_storage_bucket" "wants_assets" {
-  name     = "${data.google_project.project.project_id}-api-wants-assets"
-  location = var.region
+  name          = uuid()
+  location      = var.region
+  force_destroy = true
 
   uniform_bucket_level_access = true
 
@@ -16,8 +11,7 @@ resource "google_storage_bucket" "wants_assets" {
 }
 
 resource "google_storage_bucket_iam_member" "wants_assets_api_sa" {
-  for_each = toset(local.api_sa_bucket_roles)
   bucket   = google_storage_bucket.wants_assets.name
-  role     = each.value
+  role     = "roles/storage.objectAdmin"
   member   = "serviceAccount:${var.api_sa_email}"
 }
