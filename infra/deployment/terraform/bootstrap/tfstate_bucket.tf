@@ -7,8 +7,11 @@ resource "google_kms_crypto_key_iam_member" "gcs_sa_confidential" {
   member        = "serviceAccount:${data.google_storage_project_service_account.gcs_sa.email_address}"
 }
 
+resource "random_uuid" "tfstate_bucket" {
+}
+
 resource "google_storage_bucket" "tfstate" {
-  name     = uuid()
+  name     = random_uuid.tfstate_bucket.result
   location = var.region
 
   uniform_bucket_level_access = true
