@@ -34,5 +34,7 @@ steps:
       - "TF_VAR_api_sa_email=${_API_SA_EMAIL}"
       - "TF_VAR_api_domain_name=${_API_DOMAIN_NAME}"
       - "TF_VAR_monitoring_alerts_emails=${_MONITORING_ALERTS_EMAILS}"
+      - "TF_VAR_oauth2_client_id=${_OAUTH2_CLIENT_ID}"
+      - "TF_VAR_oauth2_client_secret_secret_id=${_OAUTH2_CLIENT_SECRET_SECRET_ID}"
 options:
   logging: CLOUD_LOGGING_ONLY

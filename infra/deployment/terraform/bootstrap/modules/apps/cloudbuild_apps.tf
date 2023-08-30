@@ -36,6 +36,8 @@ resource "google_cloudbuild_trigger" "apps" {
     _API_SA_EMAIL                   = var.api_sa_email
     _API_DOMAIN_NAME                = var.api_domain_name
     _MONITORING_ALERTS_EMAILS       = join(",", var.monitoring_alerts_emails)
+    _OAUTH2_CLIENT_ID               = var.oauth2_client_id
+    _OAUTH2_CLIENT_SECRET_SECRET_ID = google_secret_manager_secret.oauth2_client_secret.secret_id
     _TFSTATE_BUCKET                 = var.tfstate_bucket
   }
 }

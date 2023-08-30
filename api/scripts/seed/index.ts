@@ -17,24 +17,24 @@ interface Users {
 }
 
 async function run() {
-  if (!process.env.TEST_USER_REGULAR_QUEBEC_ST_FOY_1_FIREBASE_UID) {
+  if (!process.env.TEST_USER_REGULAR_QUEBEC_ST_FOY_1_ID) {
     throw new Error(
-      'TEST_USER_REGULAR_QUEBEC_ST_FOY_1_FIREBASE_UID environment variable is required'
+      'TEST_USER_REGULAR_QUEBEC_ST_FOY_1_ID environment variable is required'
     );
   }
 
-  if (!process.env.TEST_USER_REGULAR_QUEBEC_ST_FOY_2_FIREBASE_UID) {
+  if (!process.env.TEST_USER_REGULAR_QUEBEC_ST_FOY_2_ID) {
     throw new Error(
-      'TEST_USER_REGULAR_QUEBEC_ST_FOY_2_FIREBASE_UID environment variable is required'
+      'TEST_USER_REGULAR_QUEBEC_ST_FOY_2_ID environment variable is required'
     );
   }
 
   const users: Users = {
     regularQuebecStFoy1: {
-      firebaseUid: process.env.TEST_USER_REGULAR_QUEBEC_ST_FOY_1_FIREBASE_UID,
+      firebaseUid: process.env.TEST_USER_REGULAR_QUEBEC_ST_FOY_1_ID,
     },
     regularQuebecStFoy2: {
-      firebaseUid: process.env.TEST_USER_REGULAR_QUEBEC_ST_FOY_2_FIREBASE_UID,
+      firebaseUid: process.env.TEST_USER_REGULAR_QUEBEC_ST_FOY_2_ID,
     },
   };
 

@@ -1,6 +1,10 @@
 data "google_project" "project" {
 }
 
+data "google_secret_manager_secret_version" "oauth2_client_secret" {
+  secret = var.oauth2_client_secret_secret_id
+}
+
 resource "google_compute_region_network_endpoint_group" "api" {
   name                  = "api"
   network_endpoint_type = "SERVERLESS"
@@ -45,7 +49,9 @@ module "external_https_lb" {
       }
 
       iap_config = {
-        enable = false
+        enable               = true
+        oauth2_client_id     = var.oauth2_client_id
+        oauth2_client_secret = data.google_secret_manager_secret_version.oauth2_client_secret.secret_data
       }
     }
   }

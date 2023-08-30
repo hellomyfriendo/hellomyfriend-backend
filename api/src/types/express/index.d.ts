@@ -1,12 +1,12 @@
 import {Logger} from 'pino';
-import {User} from '../../users/v1';
+import {AuthUser} from '../../auth/v1';
 
 export {};
 
 declare global {
   namespace Express {
     export interface Request {
-      user?: User;
+      user?: AuthUser;
       log: Logger;
     }
   }

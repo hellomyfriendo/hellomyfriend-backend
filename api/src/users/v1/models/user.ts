@@ -1,6 +1,6 @@
 interface User {
   id: string;
-  firebaseUid: string;
+  name?: string;
   createdAt: Date;
 }
 

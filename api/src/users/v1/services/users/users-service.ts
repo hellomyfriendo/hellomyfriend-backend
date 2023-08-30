@@ -1,8 +1,4 @@
-import {
-  FieldValue,
-  Firestore,
-  FirestoreDataConverter,
-} from '@google-cloud/firestore';
+import {Firestore, FirestoreDataConverter} from '@google-cloud/firestore';
 import {User} from '../../models';
 import {AlreadyExistsError} from '../../../../errors';
 
@@ -21,8 +17,8 @@ const userConverter: FirestoreDataConverter<User> = {
 
     return {
       id: snapshot.id,
-      firebaseUid: data.uid,
-      createdAt: data.createdAt.toDate(),
+      name: data.name,
+      createdAt: snapshot.createTime.toDate(),
     };
   },
 };
@@ -37,36 +33,31 @@ interface UsersServiceSettings {
 }
 
 interface CreateUserOptions {
-  firebaseUid: string;
+  id: string;
+  name: string;
 }
 
 class UsersService {
   constructor(private readonly settings: UsersServiceSettings) {}
 
   async createUser(options: CreateUserOptions): Promise<User> {
-    const existingUserByUid = await this.getUserByFirebaseUid(
-      options.firebaseUid
-    );
+    const existingUser = await this.getUserById(options.id);
 
-    if (existingUserByUid) {
-      throw new AlreadyExistsError(
-        `User uid ${options.firebaseUid} already exists`
-      );
+    if (existingUser) {
+      throw new AlreadyExistsError(`User ${options.id} already exists`);
     }
 
-    const userDocRef = await this.settings.firestore.client
+    await this.settings.firestore.client
       .collection(this.settings.firestore.collections.users)
-      .add({
-        uid: options.firebaseUid,
-        createdAt: FieldValue.serverTimestamp(),
+      .doc(options.id)
+      .set({
+        name: options.name,
       });
 
-    const user = await this.getUserById(userDocRef.id);
+    const user = await this.getUserById(options.id);
 
     if (!user) {
-      throw new Error(
-        `User ${userDocRef.id} not found. This should never happen`
-      );
+      throw new Error(`User ${options.id} not found. This should never happen`);
     }
 
     return user;
@@ -81,23 +72,6 @@ class UsersService {
     const userDocData = userDocSnapshot.data();
 
     return userDocData;
-  }
-
-  async getUserByFirebaseUid(uid: string) {
-    const getUserByUidQuerySnapshot = await this.settings.firestore.client
-      .collection(this.settings.firestore.collections.users)
-      .withConverter(userConverter)
-      .where('uid', '==', uid)
-      .limit(1)
-      .get();
-
-    if (getUserByUidQuerySnapshot.empty) {
-      return;
-    }
-
-    const userDocSnapshot = getUserByUidQuerySnapshot.docs[0];
-
-    return userDocSnapshot.data();
   }
 }
 

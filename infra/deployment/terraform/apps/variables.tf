@@ -57,3 +57,13 @@ variable "monitoring_alerts_emails" {
   type        = string
   description = "Comma-separated list of email addresses that will receive monitoring alerts."
 }
+
+variable "oauth2_client_id" {
+  type        = string
+  description = "The client id of an OAuth client."
+}
+
+variable "oauth2_client_secret_secret_id" {
+  type        = string
+  description = "The ID of the Secret Manager secret containing the client secret of an OAuth client."
+}

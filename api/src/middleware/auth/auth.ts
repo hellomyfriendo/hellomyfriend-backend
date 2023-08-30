@@ -1,11 +1,15 @@
 import {Request, Response, NextFunction} from 'express';
-import {Auth as FirebaseAdminAuth} from 'firebase-admin/auth';
+import {OAuth2Client} from 'google-auth-library';
+import {BackendServicesClient} from '@google-cloud/compute';
+import {AuthUser} from '../../auth/v1';
 import {UnauthorizedError} from '../../errors';
-import {UsersService} from '../../users/v1';
 
 interface AuthSettings {
-  firebaseAdminAuth: FirebaseAdminAuth;
-  usersService: UsersService;
+  oAuth2Client: OAuth2Client;
+  backendServicesClient: BackendServicesClient;
+  projectId: string;
+  projectNumber: number;
+  backendServiceName: string;
 }
 
 class Auth {
@@ -13,17 +17,24 @@ class Auth {
 
   requireAuth = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const decodedIdToken = await this.decodeIdToken(req);
+      const tokenPayload = await this.getTokenPayload(req);
 
-      let user = await this.settings.usersService.getUserByFirebaseUid(
-        decodedIdToken.uid
-      );
-
-      if (!user) {
-        user = await this.settings.usersService.createUser({
-          firebaseUid: decodedIdToken.uid,
-        });
+      if (!tokenPayload) {
+        throw new UnauthorizedError('tokenPayload must be defined');
       }
+
+      if (!tokenPayload.sub) {
+        throw new UnauthorizedError('tokenPayload.sub is required');
+      }
+
+      if (!tokenPayload.name) {
+        throw new UnauthorizedError('tokenPayload.name is required');
+      }
+
+      const user: AuthUser = {
+        id: tokenPayload.sub,
+        name: tokenPayload.name,
+      };
 
       req.user = user;
 
@@ -33,23 +44,36 @@ class Auth {
     }
   };
 
-  private async decodeIdToken(req: Request) {
-    const authorizationHeader =
-      req.header('Authorization') || req.header('authorization');
+  private async getTokenPayload(req: Request) {
+    // See https://cloud.google.com/iap/docs/signed-headers-howto#retrieving_the_user_identity
+    const iapJwt = req.header('x-goog-iap-jwt-assertion');
 
-    if (!authorizationHeader) {
+    if (!iapJwt) {
       throw new UnauthorizedError(
-        '"token" is required in the "authorization" header'
+        '"token" is required in "x-goog-iap-jwt-assertion" header'
       );
     }
 
-    const idToken = authorizationHeader.split(' ')[1];
+    const [getBackendServiceResponse] =
+      await this.settings.backendServicesClient.get({
+        backendService: this.settings.backendServiceName,
+        project: this.settings.projectId,
+      });
 
-    try {
-      return await this.settings.firebaseAdminAuth.verifyIdToken(idToken);
-    } catch (err) {
-      throw new UnauthorizedError(`Error verifying idToken ${idToken}`, err);
-    }
+    const iapPublicKeysResponse =
+      await this.settings.oAuth2Client.getIapPublicKeys();
+
+    const expectedAudience = `/projects/${this.settings.projectNumber}/global/backendServices/${getBackendServiceResponse.id}`;
+
+    const ticket =
+      await this.settings.oAuth2Client.verifySignedJwtWithCertsAsync(
+        iapJwt,
+        iapPublicKeysResponse.pubkeys,
+        expectedAudience,
+        ['https://cloud.google.com/iap']
+      );
+
+    return ticket.getPayload();
   }
 }
 

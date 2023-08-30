@@ -3,7 +3,9 @@ import {Joi} from 'celebrate';
 const envVarsSchema = Joi.object()
   .keys({
     GOOGLE_API_KEY: Joi.string().required(),
+    GOOGLE_BACKEND_SERVICE_NAME: Joi.string().required(),
     GOOGLE_PROJECT_ID: Joi.string().required(),
+    GOOGLE_PROJECT_NUMBER: Joi.string().required(),
     LOG_LEVEL: Joi.string().valid('debug', 'info').default('info'),
     PORT: Joi.number().integer().required(),
     K_REVISION: Joi.string().required(),
@@ -24,12 +26,14 @@ if (error) {
 
 const config = {
   google: {
+    backendServiceName: envVars.GOOGLE_BACKEND_SERVICE_NAME,
     apiKey: envVars.GOOGLE_API_KEY,
     cloudRun: {
       revision: envVars.K_REVISION,
       service: envVars.K_SERVICE,
     },
     projectId: envVars.GOOGLE_PROJECT_ID,
+    projectNumber: envVars.GOOGLE_PROJECT_NUMBER,
   },
   logLevel: envVars.LOG_LEVEL,
   port: envVars.PORT,
