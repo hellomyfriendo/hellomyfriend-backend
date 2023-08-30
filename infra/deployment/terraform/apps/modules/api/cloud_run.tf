@@ -2,8 +2,6 @@ locals {
   friends_v1_friendships_collection     = "v1-friendships"
   friends_v1_friend_requests_collection = "v1-friend-requests"
 
-  users_v1_users_collection = "v1-users"
-
   wants_v1_wants_collection = "v1-wants"
 }
 
@@ -63,10 +61,6 @@ resource "google_cloud_run_v2_service" "api" {
       env {
         name  = "FRIENDS_V1_FIRESTORE_FRIEND_REQUESTS_COLLECTION"
         value = local.friends_v1_friend_requests_collection
-      }
-      env {
-        name  = "USERS_V1_FIRESTORE_USERS_COLLECTION"
-        value = local.users_v1_users_collection
       }
       env {
         name  = "WANTS_V1_FIRESTORE_WANTS_COLLECTION"
