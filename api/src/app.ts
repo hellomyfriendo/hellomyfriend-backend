@@ -1,7 +1,8 @@
 import express from 'express';
 import crypto from 'crypto';
-import pinoHttp from 'pino-http';
 import cors from 'cors';
+import pinoHttp from 'pino-http';
+import helmet from 'helmet';
 import fileUpload from 'express-fileupload';
 import * as firebaseAdmin from 'firebase-admin';
 import {Firestore} from '@google-cloud/firestore';
@@ -117,6 +118,12 @@ const wantsRouterV1 = new WantsRouterV1({
 
 const app = express();
 
+app.use(helmet());
+
+app.use(cors());
+
+app.use('/', healthCheckRouter);
+
 app.use(
   pinoHttp({
     logger,
@@ -145,13 +152,9 @@ app.use(
   })
 );
 
-app.use(cors());
-
 app.use(express.json());
 
 app.use(fileUpload());
-
-app.use('/', healthCheckRouter);
 
 app.use(
   new Auth({
