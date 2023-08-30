@@ -22,7 +22,7 @@ module "external_https_lb" {
   version = "~> 9.0"
 
   project = data.google_project.project.project_id
-  name    = "api"
+  name    = "hellomyfriendo-lb"
 
   ssl                             = true
   managed_ssl_certificate_domains = [var.api_domain_name]

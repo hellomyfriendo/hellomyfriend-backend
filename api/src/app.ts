@@ -1,15 +1,15 @@
 import express from 'express';
 import crypto from 'crypto';
-import pinoHttp from 'pino-http';
 import cors from 'cors';
+import pinoHttp from 'pino-http';
+import helmet from 'helmet';
 import fileUpload from 'express-fileupload';
+import * as firebaseAdmin from 'firebase-admin';
 import {Firestore} from '@google-cloud/firestore';
 import {LanguageServiceClient} from '@google-cloud/language';
 import {Storage} from '@google-cloud/storage';
 import {ImageAnnotatorClient} from '@google-cloud/vision';
 import {Client} from '@googlemaps/google-maps-services-js';
-import {initializeApp} from 'firebase-admin/app';
-import * as firebaseAdmin from 'firebase-admin';
 import {HealthCheckRouter} from './health-check';
 import {UsersService} from './users/v1';
 import {
@@ -27,9 +27,11 @@ import {errorHandler} from './error-handler/v1';
 import {logger} from './logger';
 import {config} from './config';
 
-initializeApp({
+firebaseAdmin.initializeApp({
   projectId: config.google.projectId,
 });
+
+const firebaseAdminAuth = firebaseAdmin.auth();
 
 const firestore = new Firestore({
   projectId: config.google.projectId,
@@ -51,12 +53,7 @@ const imageAnnotatorClient = new ImageAnnotatorClient({
 const googleMapsServicesClient = new Client({});
 
 const usersServiceV1 = new UsersService({
-  firestore: {
-    client: firestore,
-    collections: {
-      users: config.users.firestore.collections.users,
-    },
-  },
+  auth: firebaseAdminAuth,
 });
 
 const friendsServiceV1 = new FriendsServiceV1({
@@ -121,6 +118,12 @@ const wantsRouterV1 = new WantsRouterV1({
 
 const app = express();
 
+app.use(helmet());
+
+app.use(cors());
+
+app.use('/', healthCheckRouter);
+
 app.use(
   pinoHttp({
     logger,
@@ -149,20 +152,15 @@ app.use(
   })
 );
 
-app.use(cors());
-
 app.use(express.json());
 
 app.use(fileUpload());
 
 app.use(
   new Auth({
-    firebaseAdminAuth: firebaseAdmin.auth(),
-    usersService: usersServiceV1,
+    firebaseAdminAuth,
   }).requireAuth
 );
-
-app.use('/', healthCheckRouter);
 
 app.use('/v1/friends', friendsRouterV1);
 
@@ -182,10 +180,4 @@ app.use(
   }
 );
 
-export {
-  app,
-  usersServiceV1,
-  friendsServiceV1,
-  friendRequestsServiceV1,
-  wantsServiceV1,
-};
+export {app};

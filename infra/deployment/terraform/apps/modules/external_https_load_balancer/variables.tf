@@ -5,7 +5,7 @@ variable "region" {
 
 variable "ip_address" {
   type        = string
-  description = "IP address of the API external HTTPS load balancer."
+  description = "Existing IPv4 address to use for the external HTTPS load balancer (the actual IP address value)."
 }
 
 variable "api_domain_name" {

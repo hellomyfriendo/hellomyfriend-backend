@@ -32,9 +32,9 @@ class FriendRequestsRouter {
         try {
           req.log.info(req, 'Create Friend Request request received');
 
-          const fromUser = req.user;
+          const fromUserId = req.userId;
 
-          if (!fromUser) {
+          if (!fromUserId) {
             throw new UnauthorizedError('User not found in req');
           }
 
@@ -42,7 +42,7 @@ class FriendRequestsRouter {
 
           const friendRequest =
             await this.settings.friendRequestsService.createFriendRequest(
-              fromUser.id,
+              fromUserId,
               toUserId
             );
 
@@ -59,9 +59,9 @@ class FriendRequestsRouter {
       try {
         req.log.info(req, 'Accept Friend Request request received');
 
-        const user = req.user;
+        const userId = req.userId;
 
-        if (!user) {
+        if (!userId) {
           throw new UnauthorizedError('User not found in req');
         }
 
@@ -78,9 +78,9 @@ class FriendRequestsRouter {
           );
         }
 
-        if (user.id !== friendRequest.toUserId) {
+        if (userId !== friendRequest.toUserId) {
           throw new ForbiddenError(
-            `User ${user.id} cannot accept Friend Request ${friendRequest.id}`
+            `User ${userId} cannot accept Friend Request ${friendRequest.id}`
           );
         }
 
@@ -105,9 +105,9 @@ class FriendRequestsRouter {
       try {
         req.log.info(req, 'Reject Friend Request request received');
 
-        const user = req.user;
+        const userId = req.userId;
 
-        if (!user) {
+        if (!userId) {
           throw new UnauthorizedError('User not found in req');
         }
 
@@ -124,9 +124,9 @@ class FriendRequestsRouter {
           );
         }
 
-        if (user.id !== friendRequest.toUserId) {
+        if (userId !== friendRequest.toUserId) {
           throw new ForbiddenError(
-            `User ${user.id} cannot reject Friend Request ${friendRequest.id}`
+            `User ${userId} cannot reject Friend Request ${friendRequest.id}`
           );
         }
 
@@ -152,15 +152,15 @@ class FriendRequestsRouter {
       }),
       async (req, res, next) => {
         try {
-          const user = req.user;
+          const userId = req.userId;
 
-          if (!user) {
+          if (!userId) {
             throw new UnauthorizedError('User not found in req');
           }
 
           const friendRequests =
             await this.settings.friendRequestsService.listFriendRequests({
-              fromUserId: user.id,
+              fromUserId: userId,
             });
 
           return res.json(friendRequests);
@@ -180,15 +180,15 @@ class FriendRequestsRouter {
       }),
       async (req, res, next) => {
         try {
-          const user = req.user;
+          const userId = req.userId;
 
-          if (!user) {
+          if (!userId) {
             throw new UnauthorizedError('User not found in req');
           }
 
           const friendRequests =
             await this.settings.friendRequestsService.listFriendRequests({
-              toUserId: user.id,
+              toUserId: userId,
             });
 
           return res.json(friendRequests);
@@ -211,9 +211,9 @@ class FriendRequestsRouter {
         try {
           req.log.info(req, 'Delete Friend Request request received');
 
-          const user = req.user;
+          const userId = req.userId;
 
-          if (!user) {
+          if (!userId) {
             throw new UnauthorizedError('User not found in req');
           }
 
@@ -230,9 +230,9 @@ class FriendRequestsRouter {
             );
           }
 
-          if (user.id !== friendRequest.fromUserId) {
+          if (userId !== friendRequest.fromUserId) {
             throw new ForbiddenError(
-              `User ${user.id} cannot delete Friend Request ${friendRequest.id}`
+              `User ${userId} cannot delete Friend Request ${friendRequest.id}`
             );
           }
 

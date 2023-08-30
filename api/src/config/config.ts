@@ -4,13 +4,12 @@ const envVarsSchema = Joi.object()
   .keys({
     GOOGLE_API_KEY: Joi.string().required(),
     GOOGLE_PROJECT_ID: Joi.string().required(),
-    LOG_LEVEL: Joi.string().valid('debug', 'info').default('info'),
-    PORT: Joi.number().integer().required(),
     K_REVISION: Joi.string().required(),
     K_SERVICE: Joi.string().required(),
+    LOG_LEVEL: Joi.string().valid('debug', 'info').default('info'),
+    PORT: Joi.number().integer().required(),
     FRIENDS_V1_FIRESTORE_FRIENDSHIPS_COLLECTION: Joi.string().required(),
     FRIENDS_V1_FIRESTORE_FRIEND_REQUESTS_COLLECTION: Joi.string().required(),
-    USERS_V1_FIRESTORE_USERS_COLLECTION: Joi.string().required(),
     WANTS_V1_FIRESTORE_WANTS_COLLECTION: Joi.string().required(),
     WANTS_V1_STORAGE_WANTS_ASSETS_BUCKET: Joi.string().required(),
   })
@@ -38,13 +37,6 @@ const config = {
       collections: {
         friendships: envVars.FRIENDS_V1_FIRESTORE_FRIENDSHIPS_COLLECTION,
         friendRequests: envVars.FRIENDS_V1_FIRESTORE_FRIEND_REQUESTS_COLLECTION,
-      },
-    },
-  },
-  users: {
-    firestore: {
-      collections: {
-        users: envVars.USERS_V1_FIRESTORE_USERS_COLLECTION,
       },
     },
   },

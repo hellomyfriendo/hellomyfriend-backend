@@ -1,11 +1,9 @@
 import {Request, Response, NextFunction} from 'express';
 import {Auth as FirebaseAdminAuth} from 'firebase-admin/auth';
 import {UnauthorizedError} from '../../errors';
-import {UsersService} from '../../users/v1';
 
 interface AuthSettings {
   firebaseAdminAuth: FirebaseAdminAuth;
-  usersService: UsersService;
 }
 
 class Auth {
@@ -13,19 +11,9 @@ class Auth {
 
   requireAuth = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const decodedIdToken = await this.decodeIdToken(req);
+      const decodedIdToken = await this.getDecodedIdToken(req);
 
-      let user = await this.settings.usersService.getUserByFirebaseUid(
-        decodedIdToken.uid
-      );
-
-      if (!user) {
-        user = await this.settings.usersService.createUser({
-          firebaseUid: decodedIdToken.uid,
-        });
-      }
-
-      req.user = user;
+      req.userId = decodedIdToken.uid;
 
       return next();
     } catch (err) {
@@ -33,13 +21,14 @@ class Auth {
     }
   };
 
-  private async decodeIdToken(req: Request) {
+  private async getDecodedIdToken(req: Request) {
+    // See https://cloud.google.com/iap/docs/signed-headers-howto#retrieving_the_user_identity
     const authorizationHeader =
-      req.header('Authorization') || req.header('authorization');
+      req.header('authorization') || req.header('Authorization');
 
     if (!authorizationHeader) {
       throw new UnauthorizedError(
-        '"token" is required in the "authorization" header'
+        '"token" is required in "x-goog-iap-jwt-assertion" header'
       );
     }
 
@@ -48,7 +37,7 @@ class Auth {
     try {
       return await this.settings.firebaseAdminAuth.verifyIdToken(idToken);
     } catch (err) {
-      throw new UnauthorizedError(`Error verifying idToken ${idToken}`, err);
+      throw new UnauthorizedError('Error verifying ID Token', err);
     }
   }
 }

@@ -42,16 +42,16 @@ class WantsRouter {
         try {
           req.log.info(req, 'Create Want request received');
 
-          const user = req.user;
+          const userId = req.userId;
 
-          if (!user) {
+          if (!userId) {
             throw new UnauthorizedError('User not found in req');
           }
 
           const {title, description, visibility} = req.body;
 
           const want = await this.settings.wantsService.createWant({
-            creator: user.id,
+            creator: userId,
             title,
             description,
             visibility,
@@ -70,9 +70,9 @@ class WantsRouter {
       try {
         req.log.info(req, 'Upload image request received');
 
-        const user = req.user;
+        const userId = req.userId;
 
-        if (!user) {
+        if (!userId) {
           throw new UnauthorizedError('User not found in the request');
         }
 
@@ -84,9 +84,9 @@ class WantsRouter {
           throw new NotFoundError(`Want ${wantId} not found`);
         }
 
-        if (!want.adminsIds.includes(user.id)) {
+        if (!want.adminsIds.includes(userId)) {
           throw new ForbiddenError(
-            `User ${user.id} cannot update the Want ${want.id} image`
+            `User ${userId} cannot update the Want ${want.id} image`
           );
         }
 
@@ -142,9 +142,9 @@ class WantsRouter {
       }),
       async (req, res, next) => {
         try {
-          const user = req.user;
+          const userId = req.userId;
 
-          if (!user) {
+          if (!userId) {
             throw new UnauthorizedError('User not found in the request');
           }
 
@@ -170,7 +170,7 @@ class WantsRouter {
           }
 
           const wantsFeed = await this.settings.wantsService.getHomeWantsFeed({
-            userId: user.id,
+            userId: userId,
             geolocationCoordinates,
           });
 

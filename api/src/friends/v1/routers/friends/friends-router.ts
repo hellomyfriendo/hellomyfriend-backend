@@ -19,14 +19,14 @@ class FriendsRouter {
 
     router.get('/', async (req, res, next) => {
       try {
-        const user = req.user;
+        const userId = req.userId;
 
-        if (!user) {
+        if (!userId) {
           throw new UnauthorizedError('User not found in req');
         }
 
         const friends = await this.settings.friendsService.listFriendships({
-          userId: user.id,
+          userId: userId,
         });
 
         return res.json(friends);
@@ -39,9 +39,9 @@ class FriendsRouter {
       try {
         req.log.info(req, 'Delete Friend request received');
 
-        const user = req.user;
+        const userId = req.userId;
 
-        if (!user) {
+        if (!userId) {
           throw new UnauthorizedError('User not found in req');
         }
 
@@ -55,11 +55,9 @@ class FriendsRouter {
           throw new NotFoundError(`Friendship ${friendshipId} not found`);
         }
 
-        if (
-          !(friendship.userId1 === user.id || friendship.userId2 === user.id)
-        ) {
+        if (!(friendship.userId1 === userId || friendship.userId2 === userId)) {
           throw new ForbiddenError(
-            `User ${user.id} cannot delete Friendship ${friendship.id}`
+            `User ${userId} cannot delete Friendship ${friendship.id}`
           );
         }
 
