@@ -19,7 +19,7 @@ class FriendsRouter {
 
     router.get('/', async (req, res, next) => {
       try {
-        const user = req.user;
+        const user = req.userId;
 
         if (!user) {
           throw new UnauthorizedError('User not found in req');
@@ -39,7 +39,7 @@ class FriendsRouter {
       try {
         req.log.info(req, 'Delete Friend request received');
 
-        const user = req.user;
+        const user = req.userId;
 
         if (!user) {
           throw new UnauthorizedError('User not found in req');

@@ -42,7 +42,7 @@ class WantsRouter {
         try {
           req.log.info(req, 'Create Want request received');
 
-          const user = req.user;
+          const user = req.userId;
 
           if (!user) {
             throw new UnauthorizedError('User not found in req');
@@ -70,7 +70,7 @@ class WantsRouter {
       try {
         req.log.info(req, 'Upload image request received');
 
-        const user = req.user;
+        const user = req.userId;
 
         if (!user) {
           throw new UnauthorizedError('User not found in the request');
@@ -142,7 +142,7 @@ class WantsRouter {
       }),
       async (req, res, next) => {
         try {
-          const user = req.user;
+          const user = req.userId;
 
           if (!user) {
             throw new UnauthorizedError('User not found in the request');

@@ -3,7 +3,6 @@ import {Joi} from 'celebrate';
 const envVarsSchema = Joi.object()
   .keys({
     GOOGLE_API_KEY: Joi.string().required(),
-    GOOGLE_OAUTH2_CLIENT_ID: Joi.string().required(),
     GOOGLE_PROJECT_ID: Joi.string().required(),
     K_REVISION: Joi.string().required(),
     K_SERVICE: Joi.string().required(),
@@ -29,9 +28,6 @@ const config = {
     cloudRun: {
       revision: envVars.K_REVISION,
       service: envVars.K_SERVICE,
-    },
-    oauth2: {
-      clientId: envVars.GOOGLE_OAUTH2_CLIENT_ID,
     },
     projectId: envVars.GOOGLE_PROJECT_ID,
   },

@@ -38,7 +38,6 @@ module "api" {
   confidential_kms_crypto_key    = var.confidential_kms_crypto_key
   api_image                      = var.api_image
   api_sa_email                   = var.api_sa_email
-  oauth2_client_id               = var.oauth2_client_id
 }
 
 resource "google_compute_global_address" "external_https_load_balancer" {

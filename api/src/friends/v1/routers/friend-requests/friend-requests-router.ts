@@ -32,7 +32,7 @@ class FriendRequestsRouter {
         try {
           req.log.info(req, 'Create Friend Request request received');
 
-          const fromUser = req.user;
+          const fromUser = req.userId;
 
           if (!fromUser) {
             throw new UnauthorizedError('User not found in req');
@@ -59,7 +59,7 @@ class FriendRequestsRouter {
       try {
         req.log.info(req, 'Accept Friend Request request received');
 
-        const user = req.user;
+        const user = req.userId;
 
         if (!user) {
           throw new UnauthorizedError('User not found in req');
@@ -105,7 +105,7 @@ class FriendRequestsRouter {
       try {
         req.log.info(req, 'Reject Friend Request request received');
 
-        const user = req.user;
+        const user = req.userId;
 
         if (!user) {
           throw new UnauthorizedError('User not found in req');
@@ -152,7 +152,7 @@ class FriendRequestsRouter {
       }),
       async (req, res, next) => {
         try {
-          const user = req.user;
+          const user = req.userId;
 
           if (!user) {
             throw new UnauthorizedError('User not found in req');
@@ -180,7 +180,7 @@ class FriendRequestsRouter {
       }),
       async (req, res, next) => {
         try {
-          const user = req.user;
+          const user = req.userId;
 
           if (!user) {
             throw new UnauthorizedError('User not found in req');
@@ -211,7 +211,7 @@ class FriendRequestsRouter {
         try {
           req.log.info(req, 'Delete Friend Request request received');
 
-          const user = req.user;
+          const user = req.userId;
 
           if (!user) {
             throw new UnauthorizedError('User not found in req');

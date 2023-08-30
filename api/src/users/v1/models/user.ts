@@ -1,7 +1,7 @@
 interface User {
   id: string;
-  name?: string;
-  createdAt: Date;
+  displayName?: string;
+  photoURL?: string;
 }
 
 export {User};

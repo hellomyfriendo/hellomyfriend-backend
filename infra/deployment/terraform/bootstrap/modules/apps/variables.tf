@@ -68,11 +68,6 @@ variable "sourcerepo_branch_name" {
   description = "The Cloud Source repository branch name."
 }
 
-variable "oauth2_client_id" {
-  type        = string
-  description = "The OAuth2 client ID."
-}
-
 variable "tfstate_bucket" {
   type        = string
   description = "The GCS bucket to store the project's terraform state."

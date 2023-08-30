@@ -3,14 +3,14 @@ import crypto from 'crypto';
 import pinoHttp from 'pino-http';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
-import {OAuth2Client} from 'google-auth-library';
+import * as firebaseAdmin from 'firebase-admin';
 import {Firestore} from '@google-cloud/firestore';
 import {LanguageServiceClient} from '@google-cloud/language';
 import {Storage} from '@google-cloud/storage';
 import {ImageAnnotatorClient} from '@google-cloud/vision';
 import {Client} from '@googlemaps/google-maps-services-js';
 import {HealthCheckRouter} from './health-check';
-import {UsersService, UsersRouter as UsersRouterV1} from './users/v1';
+import {UsersService} from './users/v1';
 import {
   FriendsRouter as FriendsRouterV1,
   FriendsService as FriendsServiceV1,
@@ -26,9 +26,11 @@ import {errorHandler} from './error-handler/v1';
 import {logger} from './logger';
 import {config} from './config';
 
-const oAuth2Client = new OAuth2Client({
-  clientId: config.google.oauth2.clientId,
+firebaseAdmin.initializeApp({
+  projectId: config.google.projectId,
 });
+
+const firebaseAdminAuth = firebaseAdmin.auth();
 
 const firestore = new Firestore({
   projectId: config.google.projectId,
@@ -50,12 +52,7 @@ const imageAnnotatorClient = new ImageAnnotatorClient({
 const googleMapsServicesClient = new Client({});
 
 const usersServiceV1 = new UsersService({
-  firestore: {
-    client: firestore,
-    collections: {
-      users: config.users.firestore.collections.users,
-    },
-  },
+  auth: firebaseAdminAuth,
 });
 
 const friendsServiceV1 = new FriendsServiceV1({
@@ -105,10 +102,6 @@ const wantsServiceV1 = new WantsServiceV1({
 });
 
 const healthCheckRouter = new HealthCheckRouter().router;
-
-const usersRouterV1 = new UsersRouterV1({
-  usersService: usersServiceV1,
-}).router;
 
 const friendsRouterV1 = new FriendsRouterV1({friendsService: friendsServiceV1})
   .router;
@@ -162,11 +155,9 @@ app.use('/', healthCheckRouter);
 
 app.use(
   new Auth({
-    oAuth2Client,
+    firebaseAdminAuth,
   }).requireAuth
 );
-
-app.use('/v1/users', usersRouterV1);
 
 app.use('/v1/friends', friendsRouterV1);
 
