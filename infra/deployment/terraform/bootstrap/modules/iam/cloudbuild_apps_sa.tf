@@ -114,7 +114,7 @@ resource "google_project_iam_custom_role" "cloudbuild_apps" {
   ]
 }
 
-resource "google_project_iam_member" "cloudbuild_apps_sa" {
+resource "google_project_iam_member" "cloudbuild_apps_sa_custom_role" {
   project = data.google_project.project.project_id
   role    = google_project_iam_custom_role.cloudbuild_apps.name
   member  = "serviceAccount:${google_service_account.cloudbuild_apps.email}"
