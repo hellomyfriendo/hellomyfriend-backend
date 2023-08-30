@@ -1,15 +1,11 @@
 import {Request, Response, NextFunction} from 'express';
 import {OAuth2Client} from 'google-auth-library';
-import {BackendServicesClient} from '@google-cloud/compute';
 import {AuthUser} from '../../auth/v1';
 import {UnauthorizedError} from '../../errors';
+import {config} from '../../config';
 
 interface AuthSettings {
   oAuth2Client: OAuth2Client;
-  backendServicesClient: BackendServicesClient;
-  projectId: string;
-  projectNumber: number;
-  backendServiceName: string;
 }
 
 class Auth {
@@ -46,32 +42,21 @@ class Auth {
 
   private async getTokenPayload(req: Request) {
     // See https://cloud.google.com/iap/docs/signed-headers-howto#retrieving_the_user_identity
-    const iapJwt = req.header('x-goog-iap-jwt-assertion');
+    const authorizationHeader =
+      req.header('authorization') || req.header('Authorization');
 
-    if (!iapJwt) {
+    if (!authorizationHeader) {
       throw new UnauthorizedError(
         '"token" is required in "x-goog-iap-jwt-assertion" header'
       );
     }
 
-    const [getBackendServiceResponse] =
-      await this.settings.backendServicesClient.get({
-        backendService: this.settings.backendServiceName,
-        project: this.settings.projectId,
-      });
+    const idToken = authorizationHeader.split(' ')[1];
 
-    const iapPublicKeysResponse =
-      await this.settings.oAuth2Client.getIapPublicKeys();
-
-    const expectedAudience = `/projects/${this.settings.projectNumber}/global/backendServices/${getBackendServiceResponse.id}`;
-
-    const ticket =
-      await this.settings.oAuth2Client.verifySignedJwtWithCertsAsync(
-        iapJwt,
-        iapPublicKeysResponse.pubkeys,
-        expectedAudience,
-        ['https://cloud.google.com/iap']
-      );
+    const ticket = await this.settings.oAuth2Client.verifyIdToken({
+      idToken,
+      audience: config.google.projectId,
+    });
 
     return ticket.getPayload();
   }

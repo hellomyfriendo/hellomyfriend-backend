@@ -27,8 +27,3 @@ variable "api_sa_email" {
   type        = string
   description = "The email of the API service account."
 }
-
-variable "external_https_load_balancer_backend_service_name" {
-  type        = string
-  description = "The name of the external HTTPS load balancer backend service that will distribute traffic to the Cloud Run service. See https://cloud.google.com/load-balancing/docs/backend-service."
-}

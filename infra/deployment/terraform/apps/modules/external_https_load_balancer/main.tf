@@ -1,10 +1,6 @@
 data "google_project" "project" {
 }
 
-data "google_secret_manager_secret_version" "oauth2_client_secret" {
-  secret = var.oauth2_client_secret_secret_id
-}
-
 resource "google_compute_region_network_endpoint_group" "api" {
   name                  = "api"
   network_endpoint_type = "SERVERLESS"
@@ -26,7 +22,7 @@ module "external_https_lb" {
   version = "~> 9.0"
 
   project = data.google_project.project.project_id
-  name    = "api"
+  name    = "hellomyfriendo-lb"
 
   ssl                             = true
   managed_ssl_certificate_domains = [var.api_domain_name]
@@ -49,9 +45,7 @@ module "external_https_lb" {
       }
 
       iap_config = {
-        enable               = true
-        oauth2_client_id     = var.oauth2_client_id
-        oauth2_client_secret = data.google_secret_manager_secret_version.oauth2_client_secret.secret_data
+        enable = false
       }
     }
   }

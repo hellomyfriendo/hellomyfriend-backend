@@ -4,7 +4,6 @@ import pinoHttp from 'pino-http';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
 import {OAuth2Client} from 'google-auth-library';
-import {BackendServicesClient} from '@google-cloud/compute';
 import {Firestore} from '@google-cloud/firestore';
 import {LanguageServiceClient} from '@google-cloud/language';
 import {Storage} from '@google-cloud/storage';
@@ -28,10 +27,6 @@ import {logger} from './logger';
 import {config} from './config';
 
 const oAuth2Client = new OAuth2Client();
-
-const backendServicesClient = new BackendServicesClient({
-  projectId: config.google.projectId,
-});
 
 const firestore = new Firestore({
   projectId: config.google.projectId,
@@ -166,10 +161,6 @@ app.use('/', healthCheckRouter);
 app.use(
   new Auth({
     oAuth2Client,
-    backendServicesClient,
-    projectId: config.google.projectId,
-    projectNumber: config.google.projectNumber,
-    backendServiceName: config.google.backendServiceName,
   }).requireAuth
 );
 

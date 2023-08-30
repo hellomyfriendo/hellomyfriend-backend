@@ -62,8 +62,6 @@ module "apps" {
   confidential_kms_crypto_key = module.kms.confidential_kms_crypto_key
   restricted_kms_crypto_key   = module.kms.restricted_kms_crypto_key
   monitoring_alerts_emails    = var.monitoring_alerts_emails
-  oauth2_client_id            = var.oauth2_client_id
-  oauth2_client_secret        = var.oauth2_client_secret
   sourcerepo_name             = var.sourcerepo_name
   sourcerepo_branch_name      = var.sourcerepo_branch_name
   tfstate_bucket              = google_storage_bucket.tfstate.name

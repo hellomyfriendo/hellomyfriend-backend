@@ -36,10 +36,6 @@ resource "google_cloud_run_v2_service" "api" {
       }
 
       env {
-        name  = "GOOGLE_BACKEND_SERVICE_NAME"
-        value = var.external_https_load_balancer_backend_service_name
-      }
-      env {
         name = "GOOGLE_API_KEY"
         value_source {
           secret_key_ref {
@@ -51,10 +47,6 @@ resource "google_cloud_run_v2_service" "api" {
       env {
         name  = "GOOGLE_PROJECT_ID"
         value = data.google_project.project.project_id
-      }
-      env {
-        name  = "GOOGLE_PROJECT_NUMBER"
-        value = data.google_project.project.number
       }
       env {
         name  = "LOG_LEVEL"

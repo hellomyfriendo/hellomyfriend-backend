@@ -46,7 +46,6 @@
     "typescript": "~4.7.0"
   },
   "dependencies": {
-    "@google-cloud/compute": "^4.0.0",
     "@google-cloud/firestore": "^6.6.1",
     "@google-cloud/language": "^6.0.0",
     "@google-cloud/storage": "^6.12.0",
