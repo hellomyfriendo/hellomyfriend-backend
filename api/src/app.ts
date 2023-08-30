@@ -177,10 +177,4 @@ app.use(
   }
 );
 
-export {
-  app,
-  usersServiceV1,
-  friendsServiceV1,
-  friendRequestsServiceV1,
-  wantsServiceV1,
-};
+export {app, friendsServiceV1, friendRequestsServiceV1, wantsServiceV1};

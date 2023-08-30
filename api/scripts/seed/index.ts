@@ -1,17 +1,15 @@
 import axios from 'axios';
 import {faker} from '@faker-js/faker';
-import {usersServiceV1, friendsServiceV1, wantsServiceV1} from '../../src/app';
+import {friendsServiceV1, wantsServiceV1} from '../../src/app';
 import {WantVisibleTo} from '../../src/wants/v1/models';
 
 interface Users {
   regularQuebecStFoy1: {
-    firebaseUid: string;
-    id?: string;
+    id: string;
     friends?: string[];
   };
   regularQuebecStFoy2: {
-    firebaseUid: string;
-    id?: string;
+    id: string;
     friends?: string[];
   };
 }
@@ -29,25 +27,15 @@ async function run() {
     );
   }
 
+  // Users
   const users: Users = {
     regularQuebecStFoy1: {
-      firebaseUid: process.env.TEST_USER_REGULAR_QUEBEC_ST_FOY_1_ID,
+      id: process.env.TEST_USER_REGULAR_QUEBEC_ST_FOY_1_ID,
     },
     regularQuebecStFoy2: {
-      firebaseUid: process.env.TEST_USER_REGULAR_QUEBEC_ST_FOY_2_ID,
+      id: process.env.TEST_USER_REGULAR_QUEBEC_ST_FOY_2_ID,
     },
   };
-
-  // Users
-  const regularQuebecStFoy1User = await createUserIfNotExist(
-    users.regularQuebecStFoy1.firebaseUid
-  );
-  users.regularQuebecStFoy1.id = regularQuebecStFoy1User.id;
-
-  const regularQuebecStFoy2User = await createUserIfNotExist(
-    users.regularQuebecStFoy2.firebaseUid
-  );
-  users.regularQuebecStFoy2.id = regularQuebecStFoy2User.id;
 
   // Friends
   users.regularQuebecStFoy1.friends = [users.regularQuebecStFoy2.id];
@@ -65,18 +53,6 @@ async function run() {
   await createRegularQuebecStFoy1Wants(users);
 
   await createRegularQuebecStFoy2Wants(users);
-}
-
-async function createUserIfNotExist(firebaseUid: string) {
-  let user = await usersServiceV1.getUserByFirebaseUid(firebaseUid);
-
-  if (!user) {
-    user = await usersServiceV1.createUser({
-      firebaseUid,
-    });
-  }
-
-  return user;
 }
 
 async function createFriendshipIfNotExist(userId1: string, userId2: string) {
