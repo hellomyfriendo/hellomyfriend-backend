@@ -180,4 +180,4 @@ app.use(
   }
 );
 
-export {app, friendsServiceV1, friendRequestsServiceV1, wantsServiceV1};
+export {app};

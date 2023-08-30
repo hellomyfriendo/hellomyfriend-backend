@@ -18,7 +18,6 @@
     "compile": "tsc",
     "format": "prettier --write .",
     "fix": "gts fix",
-    "seed": "ts-node -r dotenv-expand/config scripts/seed",
     "dev": "ts-node-dev -r dotenv-expand/config src/index.ts",
     "start": "docker compose up --build",
     "prepare": "npm run compile",
