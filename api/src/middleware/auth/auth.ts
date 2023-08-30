@@ -34,7 +34,11 @@ class Auth {
 
     const idToken = authorizationHeader.split(' ')[1];
 
-    return await this.settings.firebaseAdminAuth.verifyIdToken(idToken);
+    try {
+      return await this.settings.firebaseAdminAuth.verifyIdToken(idToken);
+    } catch (err) {
+      throw new UnauthorizedError('Error verifying ID Token', err);
+    }
   }
 }
 
