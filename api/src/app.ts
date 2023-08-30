@@ -26,7 +26,9 @@ import {errorHandler} from './error-handler/v1';
 import {logger} from './logger';
 import {config} from './config';
 
-const oAuth2Client = new OAuth2Client();
+const oAuth2Client = new OAuth2Client({
+  clientId: config.google.oauth2.clientId,
+});
 
 const firestore = new Firestore({
   projectId: config.google.projectId,

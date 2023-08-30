@@ -38,6 +38,11 @@ variable "monitoring_alerts_emails" {
   description = "Email addresses that will receive monitoring alerts."
 }
 
+variable "oauth2_client_id" {
+  type        = string
+  description = "The OAuth2 client ID."
+}
+
 variable "sourcerepo_name" {
   type        = string
   description = "The Cloud Source Repository name."

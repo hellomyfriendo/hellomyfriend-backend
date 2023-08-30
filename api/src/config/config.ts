@@ -3,11 +3,12 @@ import {Joi} from 'celebrate';
 const envVarsSchema = Joi.object()
   .keys({
     GOOGLE_API_KEY: Joi.string().required(),
+    GOOGLE_OAUTH2_CLIENT_ID: Joi.string().required(),
     GOOGLE_PROJECT_ID: Joi.string().required(),
-    LOG_LEVEL: Joi.string().valid('debug', 'info').default('info'),
-    PORT: Joi.number().integer().required(),
     K_REVISION: Joi.string().required(),
     K_SERVICE: Joi.string().required(),
+    LOG_LEVEL: Joi.string().valid('debug', 'info').default('info'),
+    PORT: Joi.number().integer().required(),
     FRIENDS_V1_FIRESTORE_FRIENDSHIPS_COLLECTION: Joi.string().required(),
     FRIENDS_V1_FIRESTORE_FRIEND_REQUESTS_COLLECTION: Joi.string().required(),
     USERS_V1_FIRESTORE_USERS_COLLECTION: Joi.string().required(),
@@ -28,6 +29,9 @@ const config = {
     cloudRun: {
       revision: envVars.K_REVISION,
       service: envVars.K_SERVICE,
+    },
+    oauth2: {
+      clientId: envVars.GOOGLE_OAUTH2_CLIENT_ID,
     },
     projectId: envVars.GOOGLE_PROJECT_ID,
   },

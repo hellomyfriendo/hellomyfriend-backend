@@ -6,6 +6,7 @@ services:
       - ${PORT}:${PORT}
     environment:
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GOOGLE_OAUTH2_CLIENT_ID=${GOOGLE_OAUTH2_CLIENT_ID}
       - GOOGLE_PROJECT_ID=${GOOGLE_PROJECT_ID}
       - PORT=${PORT}
       - K_REVISION=${K_REVISION}

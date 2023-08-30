@@ -45,6 +45,10 @@ resource "google_cloud_run_v2_service" "api" {
         }
       }
       env {
+        name  = "GOOGLE_OAUTH2_CLIENT_ID"
+        value = var.oauth2_client_id
+      }
+      env {
         name  = "GOOGLE_PROJECT_ID"
         value = data.google_project.project.project_id
       }
