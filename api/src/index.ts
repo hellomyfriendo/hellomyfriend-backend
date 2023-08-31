@@ -5,6 +5,6 @@ import {config} from './config';
 app.listen(config.port, () => {
   logger.info(
     {},
-    `Hello, My Friendo! backend listening on port ${config.port}...`
+    `Hello, My Friendo! API server listening on port ${config.port}...`
   );
 });

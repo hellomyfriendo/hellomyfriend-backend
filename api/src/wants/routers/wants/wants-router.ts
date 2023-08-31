@@ -3,8 +3,8 @@ import {celebrate, Joi, Segments} from 'celebrate';
 import {StatusCodes} from 'http-status-codes';
 import {WantsService} from '../../services';
 import {GeolocationCoordinates, WantVisibleTo} from '../../models';
-import {UnauthorizedError} from '../../../../errors/unauthorized-error';
-import {ForbiddenError, NotFoundError} from '../../../../errors';
+import {UnauthorizedError} from '../../../errors/unauthorized-error';
+import {ForbiddenError, NotFoundError} from '../../../errors';
 
 interface WantsRouterSettings {
   wantsService: WantsService;

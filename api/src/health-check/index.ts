@@ -1,1 +1,1 @@
-export {HealthCheckRouter} from './health-check-router';
+export {HealthCheckRouter} from './routers';
