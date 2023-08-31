@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "136183611397",
+    "project_id": "hellomyfriendo-production",
+    "storage_bucket": "hellomyfriendo-production.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:136183611397:android:0b061bca4e8fc7d4319c6c",
+        "android_client_info": {
+          "package_name": "com.hellomyfriendo.hellomyfriendo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "136183611397-v9rhsl4uj3luse3bg1snrpnif2aiiac5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.hellomyfriendo.hellomyfriendo",
+            "certificate_hash": "fd17b98e873344be1f4e3d689dc9fdf42e2f0992"
+          }
+        },
+        {
+          "client_id": "136183611397-ctlqkrc8fpqqm1qn84qg8ffp4tad6pvf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUvzPraI6KEGeg4GsVAuO7oAnGhykD5_g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "136183611397-ctlqkrc8fpqqm1qn84qg8ffp4tad6pvf.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "136183611397-qb3pu9n68ijoi8j474lfatomid56hasf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.hellomyfriendo"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
