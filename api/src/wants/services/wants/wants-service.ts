@@ -17,9 +17,9 @@ import {
   WantVisibility,
   WantVisibleTo,
 } from '../../models';
-import {NotFoundError} from '../../../../errors';
-import {UsersService} from '../../../../users/v1';
-import {FriendsService} from '../../../../friends/v1';
+import {NotFoundError} from '../../../errors';
+import {UsersService} from '../../../users';
+import {FriendsService} from '../../../friends';
 
 interface WantDocVisibility {
   visibleTo: WantVisibleTo | string[];

@@ -6,7 +6,7 @@ import {
   ForbiddenError,
   NotFoundError,
   UnauthorizedError,
-} from '../../../../errors';
+} from '../../../errors';
 
 interface FriendRequestsRouterSettings {
   friendRequestsService: FriendRequestsService;

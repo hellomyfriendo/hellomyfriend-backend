@@ -3,10 +3,10 @@ import {
   Firestore,
   FirestoreDataConverter,
 } from '@google-cloud/firestore';
-import {UsersService} from '../../../../users/v1';
+import {UsersService} from '../../../users';
 import {FriendRequest} from '../../models';
 import {FriendsService} from '../friends';
-import {AlreadyExistsError, NotFoundError} from '../../../../errors';
+import {AlreadyExistsError, NotFoundError} from '../../../errors';
 
 const friendRequestConverter: FirestoreDataConverter<FriendRequest> = {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

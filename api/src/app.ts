@@ -11,19 +11,16 @@ import {Storage} from '@google-cloud/storage';
 import {ImageAnnotatorClient} from '@google-cloud/vision';
 import {Client} from '@googlemaps/google-maps-services-js';
 import {HealthCheckRouter} from './health-check';
-import {UsersService} from './users/v1';
+import {UsersService} from './users';
 import {
-  FriendsRouter as FriendsRouterV1,
-  FriendsService as FriendsServiceV1,
-  FriendRequestsService as FriendRequestsServiceV1,
-  FriendRequestsRouter as FriendRequestsRouterV1,
-} from './friends/v1';
-import {
-  WantsRouter as WantsRouterV1,
-  WantsService as WantsServiceV1,
-} from './wants/v1';
+  FriendsRouter,
+  FriendsService,
+  FriendRequestsService,
+  FriendRequestsRouter,
+} from './friends';
+import {WantsRouter, WantsService} from './wants';
 import {Auth} from './middleware';
-import {errorHandler} from './error-handler/v1';
+import {errorHandler} from './error-handler';
 import {logger} from './logger';
 import {config} from './config';
 
@@ -56,7 +53,7 @@ const usersServiceV1 = new UsersService({
   auth: firebaseAdminAuth,
 });
 
-const friendsServiceV1 = new FriendsServiceV1({
+const friendsService = new FriendsService({
   firestore: {
     client: firestore,
     collections: {
@@ -66,18 +63,18 @@ const friendsServiceV1 = new FriendsServiceV1({
   usersService: usersServiceV1,
 });
 
-const friendRequestsServiceV1 = new FriendRequestsServiceV1({
+const friendRequestsService = new FriendRequestsService({
   firestore: {
     client: firestore,
     collections: {
       friendRequests: config.friends.firestore.collections.friendRequests,
     },
   },
-  friendsService: friendsServiceV1,
+  friendsService: friendsService,
   usersService: usersServiceV1,
 });
 
-const wantsServiceV1 = new WantsServiceV1({
+const wantsService = new WantsService({
   firestore: {
     client: firestore,
     collections: {
@@ -98,22 +95,22 @@ const wantsServiceV1 = new WantsServiceV1({
   },
   googleMapsServicesClient,
   googleApiKey: config.google.apiKey,
-  friendsService: friendsServiceV1,
+  friendsService: friendsService,
   usersService: usersServiceV1,
 });
 
 const healthCheckRouter = new HealthCheckRouter().router;
 
-const friendsRouterV1 = new FriendsRouterV1({friendsService: friendsServiceV1})
+const friendsRouter = new FriendsRouter({friendsService: friendsService})
   .router;
 
-const friendRequestsRouterV1 = new FriendRequestsRouterV1({
-  friendsService: friendsServiceV1,
-  friendRequestsService: friendRequestsServiceV1,
+const friendRequestsRouter = new FriendRequestsRouter({
+  friendsService: friendsService,
+  friendRequestsService: friendRequestsService,
 }).router;
 
-const wantsRouterV1 = new WantsRouterV1({
-  wantsService: wantsServiceV1,
+const wantsRouter = new WantsRouter({
+  wantsService: wantsService,
 }).router;
 
 const app = express();
@@ -162,11 +159,11 @@ app.use(
   }).requireAuth
 );
 
-app.use('/v1/friends', friendsRouterV1);
+app.use('/v1/friends', friendsRouter);
 
-app.use('/v1/friend-requests', friendRequestsRouterV1);
+app.use('/v1/friend-requests', friendRequestsRouter);
 
-app.use('/v1/wants', wantsRouterV1);
+app.use('/v1/wants', wantsRouter);
 
 app.use(
   async (
