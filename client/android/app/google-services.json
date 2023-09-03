@@ -7,14 +7,14 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:136183611397:android:0b061bca4e8fc7d4319c6c",
+        "mobilesdk_app_id": "1:136183611397:android:47079c21abdffd79319c6c",
         "android_client_info": {
           "package_name": "com.hellomyfriendo.hellomyfriendo"
         }
       },
       "oauth_client": [
         {
-          "client_id": "136183611397-v9rhsl4uj3luse3bg1snrpnif2aiiac5.apps.googleusercontent.com",
+          "client_id": "136183611397-274bdadcr41r5p2apdic526ke6e14rru.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.hellomyfriendo.hellomyfriendo",
@@ -22,27 +22,27 @@
           }
         },
         {
-          "client_id": "136183611397-ctlqkrc8fpqqm1qn84qg8ffp4tad6pvf.apps.googleusercontent.com",
+          "client_id": "136183611397-c80aoh2a90ftuh8t3fp6kq0mrf8l1lll.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCUvzPraI6KEGeg4GsVAuO7oAnGhykD5_g"
+          "current_key": "AIzaSyC1rz7Vs7W3KP6xZWveFg9MpUnL8Byw3UY"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "136183611397-ctlqkrc8fpqqm1qn84qg8ffp4tad6pvf.apps.googleusercontent.com",
+              "client_id": "136183611397-c80aoh2a90ftuh8t3fp6kq0mrf8l1lll.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "136183611397-qb3pu9n68ijoi8j474lfatomid56hasf.apps.googleusercontent.com",
+              "client_id": "136183611397-qj5r1ig2a3mk6o1h54706m75t2ds5nqn.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.hellomyfriendo"
+                "bundle_id": "com.hellomyfriendo.hellomyfriendo"
               }
             }
           ]

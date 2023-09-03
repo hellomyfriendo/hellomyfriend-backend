@@ -47,31 +47,33 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDj1u7l4h77kJmK66m0hG5bB_4KQnEqy74',
-    appId: '1:136183611397:web:64a60708f81a30e4319c6c',
+    apiKey: 'AIzaSyCBFbQQo1L7ppUajbBJKO4z6Ya_JLpw3-Y',
+    appId: '1:136183611397:web:96ae39770dda033c319c6c',
     messagingSenderId: '136183611397',
     projectId: 'hellomyfriendo-production',
     authDomain: 'hellomyfriendo-production.firebaseapp.com',
     storageBucket: 'hellomyfriendo-production.appspot.com',
-    measurementId: 'G-JNQ1EN66Y4',
+    measurementId: 'G-0SDPK369QT',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCUvzPraI6KEGeg4GsVAuO7oAnGhykD5_g',
-    appId: '1:136183611397:android:0b061bca4e8fc7d4319c6c',
+    apiKey: 'AIzaSyC1rz7Vs7W3KP6xZWveFg9MpUnL8Byw3UY',
+    appId: '1:136183611397:android:47079c21abdffd79319c6c',
     messagingSenderId: '136183611397',
     projectId: 'hellomyfriendo-production',
     storageBucket: 'hellomyfriendo-production.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCCyh4xMjW_en3JUYJpTUbxbLCt3JBykp0',
-    appId: '1:136183611397:ios:35a7a5a4281f287d319c6c',
+    apiKey: 'AIzaSyC2tagYZPKzSmLwDAUuE0fKxyj5NnXh5q8',
+    appId: '1:136183611397:ios:67455fe0c79193e3319c6c',
     messagingSenderId: '136183611397',
     projectId: 'hellomyfriendo-production',
     storageBucket: 'hellomyfriendo-production.appspot.com',
-    androidClientId: '136183611397-v9rhsl4uj3luse3bg1snrpnif2aiiac5.apps.googleusercontent.com',
-    iosClientId: '136183611397-rl2qslueh5ucctkir334aal7u3i4hcr9.apps.googleusercontent.com',
+    androidClientId:
+        '136183611397-274bdadcr41r5p2apdic526ke6e14rru.apps.googleusercontent.com',
+    iosClientId:
+        '136183611397-qj5r1ig2a3mk6o1h54706m75t2ds5nqn.apps.googleusercontent.com',
     iosBundleId: 'com.hellomyfriendo.hellomyfriendo',
   );
 }
