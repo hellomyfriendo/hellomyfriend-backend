@@ -1,39 +1,11 @@
-import {
-  FieldValue,
-  Firestore,
-  FirestoreDataConverter,
-} from '@google-cloud/firestore';
+import {Sql} from 'postgres';
 import {UsersService} from '../../../users';
 import {FriendRequest} from '../../models';
 import {FriendsService} from '../friends';
 import {AlreadyExistsError, NotFoundError} from '../../../errors';
 
-const friendRequestConverter: FirestoreDataConverter<FriendRequest> = {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  toFirestore: function (_want) {
-    throw new Error('Function not implemented.');
-  },
-
-  fromFirestore: function (snapshot) {
-    const data = snapshot.data();
-
-    return {
-      id: snapshot.id,
-      fromUserId: data.fromUserId,
-      toUserId: data.toUserId,
-      createdAt: data.createdAt.toDate(),
-      deletedAt: data.deletedAt?.toDate(),
-    };
-  },
-};
-
 interface FriendRequestsServiceSettings {
-  firestore: {
-    client: Firestore;
-    collections: {
-      friendRequests: string;
-    };
-  };
+  sql: Sql;
   friendsService: FriendsService;
   usersService: UsersService;
 }
@@ -41,9 +13,15 @@ interface FriendRequestsServiceSettings {
 interface ListFriendRequestsOptions {
   fromUserId?: string;
   toUserId?: string;
+  orderBy?: {
+    column: 'createdAt';
+    direction: 'asc' | 'desc';
+  }[];
 }
 
 class FriendRequestsService {
+  private readonly friendRequestsTable = 'friend_requests';
+
   constructor(private settings: FriendRequestsServiceSettings) {}
 
   async createFriendRequest(
@@ -51,7 +29,7 @@ class FriendRequestsService {
     toUserId: string
   ): Promise<FriendRequest> {
     if (fromUserId === toUserId) {
-      throw new RangeError('Cannot send a Friend Request to own self');
+      throw new RangeError('Cannot send a Friend Request to self');
     }
 
     if (await this.settings.friendsService.areFriends(fromUserId, toUserId)) {
@@ -60,44 +38,27 @@ class FriendRequestsService {
       );
     }
 
-    if (await this.getFriendRequestByUserFromAndUserTo(fromUserId, toUserId)) {
-      throw new AlreadyExistsError(
-        `Friend Request from user ${fromUserId} to user ${toUserId} already exists`
-      );
-    }
-
     const fromUser = await this.settings.usersService.getUserById(fromUserId);
 
     if (!fromUser) {
-      throw new NotFoundError(`From User ${fromUserId} not found`);
+      throw new NotFoundError(`From user ${fromUserId} not found`);
     }
 
     const toUser = await this.settings.usersService.getUserById(toUserId);
 
     if (!toUser) {
-      throw new NotFoundError(`To User ${toUserId} not found`);
+      throw new NotFoundError(`To user ${toUserId} not found`);
     }
 
-    const friendRequestsCollection = this.settings.firestore.client.collection(
-      this.settings.firestore.collections.friendRequests
-    );
+    const {sql} = this.settings;
 
-    const friendRequestDocRef = await friendRequestsCollection.add({
-      fromUserId: fromUser.id,
-      toUserId: toUser.id,
-      createdAt: FieldValue.serverTimestamp(),
-      deletedAt: null,
-    });
-
-    const friendRequest = await this.getFriendRequestById(
-      friendRequestDocRef.id
-    );
-
-    if (!friendRequest) {
-      throw new Error(
-        `Friend Request ${friendRequestDocRef.id} not found. This should never happen.`
-      );
-    }
+    const [friendRequest]: [FriendRequest] = await sql`
+      INSERT INTO ${sql(this.friendRequestsTable)} ${sql({
+      fromUserId,
+      toUserId,
+    })}
+      RETURNING *
+    `;
 
     return friendRequest;
   }
@@ -105,91 +66,81 @@ class FriendRequestsService {
   async getFriendRequestById(
     friendRequestId: string
   ): Promise<FriendRequest | undefined> {
-    const friendRequestDocSnapshot = await this.settings.firestore.client
-      .doc(
-        `${this.settings.firestore.collections.friendRequests}/${friendRequestId}`
-      )
-      .withConverter(friendRequestConverter)
-      .get();
+    const {sql} = this.settings;
 
-    const friendRequest = friendRequestDocSnapshot.data();
-
-    if (!friendRequest) {
-      return;
-    }
-
-    if (friendRequest.deletedAt) {
-      return;
-    }
+    const [friendRequest]: [FriendRequest?] = await sql`
+      SELECT *
+      FROM ${sql(this.friendRequestsTable)}
+      WHERE deleted_at IS NULL
+      AND id = ${friendRequestId}
+    `;
 
     return friendRequest;
   }
 
-  async getFriendRequestByUserFromAndUserTo(
+  async getFriendRequestByFromUserIdAndToUserId(
     fromUserId: string,
     toUserId: string
   ): Promise<FriendRequest | undefined> {
-    const friendRequests = await this.listFriendRequests({
-      fromUserId,
-      toUserId,
-    });
+    const {sql} = this.settings;
 
-    if (friendRequests.length === 0) {
-      return;
-    }
+    const [friendRequest]: [FriendRequest?] = await sql`
+      SELECT *
+      FROM ${sql(this.friendRequestsTable)}
+      WHERE ${sql('deletedAt')} IS NULL
+      AND ${sql('fromUserId')} = ${fromUserId}
+      AND ${sql('toUserId')} = ${toUserId}
+    `;
 
-    if (friendRequests.length !== 1) {
-      throw new Error(
-        `More than one friend request from user ${fromUserId} to user ${toUserId} were found. This should never happen.`
-      );
-    }
-
-    return friendRequests[0];
+    return friendRequest;
   }
 
   async listFriendRequests(
     options: ListFriendRequestsOptions
   ): Promise<FriendRequest[]> {
-    let listFriendRequestsQuery = this.settings.firestore.client
-      .collection(this.settings.firestore.collections.friendRequests)
-      .withConverter(friendRequestConverter)
-      .where('deletedAt', '==', null);
+    const {sql} = this.settings;
 
-    if (options.fromUserId) {
-      listFriendRequestsQuery = listFriendRequestsQuery.where(
-        'fromUserId',
-        '==',
+    const friendRequests = await sql<FriendRequest[]>`
+      SELECT *
+      FROM ${sql(this.friendRequestsTable)}
+      WHERE ${sql('deletedAt')} IS NULL
+      ${
         options.fromUserId
-      );
-    }
-
-    if (options.toUserId) {
-      listFriendRequestsQuery = listFriendRequestsQuery.where(
-        'toUserId',
-        '==',
+          ? sql`AND ${sql('fromUserId')} = ${options.fromUserId}`
+          : sql``
+      }
+      ${
         options.toUserId
-      );
-    }
+          ? sql`AND ${sql('toUserId')} = ${options.toUserId}`
+          : sql``
+      }
+      ${
+        options.orderBy
+          ? sql`ORDER BY ${options.orderBy.map((x, i) => {
+              return `${i ? sql`,` : sql``} ${sql(x.column)} ${
+                x.direction === 'asc' ? sql`ASC` : sql`DESC`
+              }`;
+            })}`
+          : sql``
+      }
+    `;
 
-    const listFriendRequestsQuerySnapshot = await listFriendRequestsQuery.get();
-
-    return listFriendRequestsQuerySnapshot.docs.map(doc => doc.data());
+    return friendRequests;
   }
 
-  async deleteFriendRequest(friendRequestId: string) {
-    const friendRequestDocRef = this.settings.firestore.client.doc(
-      `${this.settings.firestore.collections.friendRequests}/${friendRequestId}`
-    );
+  async deleteFriendRequest(friendRequestId: string): Promise<void> {
+    const {sql} = this.settings;
 
-    const friendRequestDocRefSnapshot = await friendRequestDocRef.get();
+    const queryResult = await sql`
+      UPDATE ${sql(this.friendRequestsTable)}
+      SET ${sql('deletedAt')} = NOW()
+      WHERE id = ${friendRequestId}
+      AND deleted_at IS NULL
+    `;
 
-    if (!friendRequestDocRefSnapshot.exists) {
+    if (queryResult.count === 0) {
       throw new NotFoundError(`Friend Request ${friendRequestId} not found`);
     }
-
-    await friendRequestDocRef.update({
-      deletedAt: FieldValue.serverTimestamp(),
-    });
   }
 }
 

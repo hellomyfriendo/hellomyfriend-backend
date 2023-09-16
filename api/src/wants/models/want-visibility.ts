@@ -1,8 +1,6 @@
-import {WantVisibleTo} from './want-visible-to';
-
 interface WantVisibility {
-  visibleTo: WantVisibleTo | string[];
-  location?: {
+  visibleTo: string[];
+  location: {
     address: string;
     radiusInMeters: number;
   };

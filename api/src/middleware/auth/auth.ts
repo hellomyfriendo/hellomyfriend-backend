@@ -28,7 +28,7 @@ class Auth {
 
     if (!authorizationHeader) {
       throw new UnauthorizedError(
-        '"token" is required in "x-goog-iap-jwt-assertion" header'
+        '"token" is required in "authorization" header'
       );
     }
 

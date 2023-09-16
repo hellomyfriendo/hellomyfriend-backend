@@ -1,9 +1,8 @@
 interface Friendship {
   id: string;
-  userId1: string;
-  userId2: string;
+  user1Id: string;
+  user2Id: string;
   createdAt: Date;
-  deletedAt: Date | null;
 }
 
 export {Friendship};

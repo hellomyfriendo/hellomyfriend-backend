@@ -7,12 +7,11 @@ interface Want {
   adminsIds: string[];
   membersIds: string[];
   title: string;
-  description: string | null;
+  description?: string;
   visibility: WantVisibility;
-  image: WantImage | null;
+  image?: WantImage;
   createdAt: Date;
   updatedAt: Date;
-  deletedAt?: Date;
 }
 
 export {Want};
