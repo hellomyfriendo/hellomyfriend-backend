@@ -1,1 +1,1 @@
-// export {WantsService} from './wants-service';
+export {WantsService} from './wants-service';

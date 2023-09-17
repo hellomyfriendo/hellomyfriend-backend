@@ -1,1 +1,1 @@
-// export {WantsRouter} from './wants-router';
+export {WantsRouter} from './wants-router';

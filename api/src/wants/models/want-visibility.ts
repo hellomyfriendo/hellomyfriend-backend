@@ -1,9 +1,7 @@
-interface WantVisibility {
-  visibleTo: string[];
-  location: {
-    address: string;
-    radiusInMeters: number;
-  };
+enum WantVisibility {
+  Friends = 'friends',
+  Public = 'public',
+  Specific = 'specific',
 }
 
 export {WantVisibility};

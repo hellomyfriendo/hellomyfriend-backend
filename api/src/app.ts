@@ -34,6 +34,18 @@ const sql = postgres({
     ...postgres.camel,
     undefined: null,
   },
+  types: {
+    point: {
+      to: 600,
+      from: [600],
+      serialize: ([x, y]: [number, number]) => '(' + x + ',' + y + ')',
+      parse: (x: string) =>
+        x
+          .slice(1, -1)
+          .split(',')
+          .map(x => +x),
+    },
+  },
 });
 
 firebaseAdmin.initializeApp({
@@ -71,30 +83,25 @@ const friendRequestsService = new FriendRequestsService({
   usersService,
 });
 
-// const wantsService = new WantsService({
-//   firestore: {
-//     client: firestore,
-//     collections: {
-//       wants: config.wants.firestore.collections.wants,
-//     },
-//   },
-//   language: {
-//     client: languageServiceClient,
-//   },
-//   storage: {
-//     client: storage,
-//     buckets: {
-//       wantsAssets: config.wants.storage.buckets.wantsAssets,
-//     },
-//   },
-//   vision: {
-//     imageAnnotatorClient,
-//   },
-//   googleMapsServicesClient,
-//   googleApiKey: config.google.apiKey,
-//   friendsService: friendsService,
-//   usersService: usersService,
-// });
+const wantsService = new WantsService({
+  sql,
+  language: {
+    client: languageServiceClient,
+  },
+  storage: {
+    client: storage,
+    buckets: {
+      wantsAssets: config.wants.storage.buckets.wantsAssets,
+    },
+  },
+  vision: {
+    imageAnnotatorClient,
+  },
+  googleMapsServicesClient,
+  googleApiKey: config.google.apiKey,
+  friendsService: friendsService,
+  usersService: usersService,
+});
 
 const healthCheckRouter = new HealthCheckRouter().router;
 
@@ -106,9 +113,9 @@ const friendRequestsRouter = new FriendRequestsRouter({
   friendRequestsService: friendRequestsService,
 }).router;
 
-// const wantsRouter = new WantsRouter({
-//   wantsService: wantsService,
-// }).router;
+const wantsRouter = new WantsRouter({
+  wantsService: wantsService,
+}).router;
 
 const app = express();
 
@@ -160,7 +167,7 @@ app.use('/v1/friends', friendsRouter);
 
 app.use('/v1/friend-requests', friendRequestsRouter);
 
-// app.use('/v1/wants', wantsRouter);
+app.use('/v1/wants', wantsRouter);
 
 app.use(
   async (

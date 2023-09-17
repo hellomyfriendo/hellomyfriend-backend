@@ -4,7 +4,7 @@ exports.up = async (client: Sql) => {
   await client`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
     )
   `;
 
@@ -13,10 +13,8 @@ exports.up = async (client: Sql) => {
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       from_user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
       to_user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      deleted_at TIMESTAMP WITH TIME ZONE,
-
-      CONSTRAINT from_user_id_to_user_id_unique UNIQUE(from_user_id, to_user_id, deleted_at)
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+      deleted_at TIMESTAMP WITH TIME ZONE
     )
   `;
 
@@ -25,15 +23,66 @@ exports.up = async (client: Sql) => {
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       user1_id TEXT REFERENCES users(id) ON DELETE CASCADE,
       user2_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+      deleted_at TIMESTAMP WITH TIME ZONE
+    )
+  `;
+
+  await client`
+    CREATE TABLE IF NOT EXISTS wants (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      creator_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      description TEXT,
+      image_url TEXT,
+      visibility TEXT NOT NULL,
+      address TEXT NOT NULL,
+      coordinates POINT NOT NULL,
+      google_place_id TEXT NOT NULL,
+      radius_in_meters INTEGER NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
       deleted_at TIMESTAMP WITH TIME ZONE,
 
-      CONSTRAINT user1_id_user2_id_unique UNIQUE(user1_id, user2_id, deleted_at)
+      CONSTRAINT wants_creator_id_title_unique UNIQUE(creator_id, title)
+    )
+  `;
+
+  await client`
+    CREATE TABLE IF NOT EXISTS wants_members (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      want_id UUID REFERENCES wants(id) ON DELETE CASCADE,
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      role TEXT NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+      deleted_at TIMESTAMP WITH TIME ZONE
+    )
+  `;
+
+  await client`
+    CREATE TABLE IF NOT EXISTS wants_visible_to(
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      want_id UUID REFERENCES wants(id) ON DELETE CASCADE,
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+      deleted_at TIMESTAMP WITH TIME ZONE
     )
   `;
 };
 
 exports.down = async (client: Sql) => {
+  await client`
+    DROP TABLE IF EXISTS wants_visible_to
+  `;
+
+  await client`
+    DROP TABLE IF EXISTS wants_members
+  `;
+
+  await client`
+    DROP TABLE IF EXISTS wants
+  `;
+
   await client`
     DROP TABLE IF EXISTS friends
   `;
