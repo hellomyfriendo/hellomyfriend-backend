@@ -2,7 +2,11 @@ import * as express from 'express';
 import {celebrate, Joi, Segments} from 'celebrate';
 import {StatusCodes} from 'http-status-codes';
 import {WantsService} from '../../services';
-import {GeolocationCoordinates, WantVisibility} from '../../models';
+import {
+  GeolocationCoordinates,
+  WantMemberRole,
+  WantVisibility,
+} from '../../models';
 import {UnauthorizedError} from '../../../errors/unauthorized-error';
 import {ForbiddenError, NotFoundError} from '../../../errors';
 
@@ -70,65 +74,89 @@ class WantsRouter {
       }
     );
 
-    // router.post('/:wantId/upload-image', async (req, res, next) => {
-    //   try {
-    //     req.log.info(req, 'Upload image request received');
+    router.post('/:wantId/upload-image', async (req, res, next) => {
+      try {
+        req.log.info(req, 'Upload image request received');
 
-    //     const userId = req.userId;
+        const userId = req.userId;
 
-    //     if (!userId) {
-    //       throw new UnauthorizedError('User not found in the request');
-    //     }
+        if (!userId) {
+          throw new UnauthorizedError('User not found in the request');
+        }
 
-    //     const {wantId} = req.params;
+        const {wantId} = req.params;
 
-    //     const want = await this.settings.wantsService.getWantById(wantId);
+        const want = await this.settings.wantsService.getWantById(wantId);
 
-    //     if (!want) {
-    //       throw new NotFoundError(`Want ${wantId} not found`);
-    //     }
+        if (!want) {
+          throw new NotFoundError(`Want ${wantId} not found`);
+        }
 
-    //     if (!want.adminsIds.includes(userId)) {
-    //       throw new ForbiddenError(
-    //         `User ${userId} cannot update the Want ${want.id} image`
-    //       );
-    //     }
+        if (!want.administratorsIds.includes(userId)) {
+          throw new ForbiddenError(
+            `User ${userId} cannot update the Want ${want.id} image`
+          );
+        }
 
-    //     if (!req.files) {
-    //       throw new RangeError('No files were uploaded');
-    //     }
+        if (!req.files) {
+          throw new RangeError('No files were uploaded');
+        }
 
-    //     const fileKeys = Object.keys(req.files);
+        const fileKeys = Object.keys(req.files);
 
-    //     if (fileKeys.length !== 1) {
-    //       throw new RangeError('A single file must be uploaded');
-    //     }
+        if (fileKeys.length !== 1) {
+          throw new RangeError('A single file must be uploaded');
+        }
 
-    //     const uploadedImage = req.files[fileKeys[0]];
+        const uploadedImage = req.files[fileKeys[0]];
 
-    //     if (!('data' in uploadedImage)) {
-    //       throw new Error(
-    //         "The uploaded file should contain the 'data' property"
-    //       );
-    //     }
+        if (!('data' in uploadedImage)) {
+          throw new Error(
+            "The uploaded file should contain the 'data' property"
+          );
+        }
 
-    //     const updatedWant = await this.settings.wantsService.updateWantById(
-    //       want.id,
-    //       {
-    //         image: {
-    //           data: uploadedImage.data,
-    //           mimeType: uploadedImage.mimetype,
-    //         },
-    //       }
-    //     );
+        const updatedWant = await this.settings.wantsService.updateWantById(
+          want.id,
+          {
+            image: {
+              data: uploadedImage.data,
+              mimeType: uploadedImage.mimetype,
+            },
+          }
+        );
 
-    //     req.log.info(updatedWant, `Want ${updatedWant.id} updated!`);
+        req.log.info(updatedWant, `Want ${updatedWant.id} updated!`);
 
-    //     return res.json(updatedWant);
-    //   } catch (err) {
-    //     return next(err);
-    //   }
-    // });
+        return res.json(updatedWant);
+      } catch (err) {
+        return next(err);
+      }
+    });
+
+    router.get('/', async (req, res, next) => {
+      try {
+        const userId = req.userId;
+
+        if (!userId) {
+          throw new UnauthorizedError('User not found in the request');
+        }
+
+        const wants = await this.settings.wantsService.listWants({
+          userId,
+          orderBy: [
+            {
+              column: 'createdAt',
+              direction: 'desc',
+            },
+          ],
+        });
+
+        return res.json(wants);
+      } catch (err) {
+        return next(err);
+      }
+    });
 
     // router.get(
     //   '/home-feed',

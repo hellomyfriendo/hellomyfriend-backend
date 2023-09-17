@@ -34,7 +34,6 @@ exports.up = async (client: Sql) => {
       creator_id TEXT REFERENCES users(id) ON DELETE CASCADE,
       title TEXT NOT NULL,
       description TEXT,
-      image_url TEXT,
       visibility TEXT NOT NULL,
       address TEXT NOT NULL,
       coordinates POINT NOT NULL,
@@ -42,9 +41,7 @@ exports.up = async (client: Sql) => {
       radius_in_meters INTEGER NOT NULL,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-      deleted_at TIMESTAMP WITH TIME ZONE,
-
-      CONSTRAINT wants_creator_id_title_unique UNIQUE(creator_id, title)
+      deleted_at TIMESTAMP WITH TIME ZONE
     )
   `;
 
@@ -68,9 +65,26 @@ exports.up = async (client: Sql) => {
       deleted_at TIMESTAMP WITH TIME ZONE
     )
   `;
+
+  await client`
+    CREATE TABLE IF NOT EXISTS wants_images(
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      want_id UUID REFERENCES wants(id),
+      google_storage_bucket TEXT NOT NULL,
+      google_storage_file TEXT NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+
+      CONSTRAINT wants_images_want_id_unique UNIQUE(want_id)
+    )
+  `;
 };
 
 exports.down = async (client: Sql) => {
+  await client`
+    DROP TABLE IF EXISTS wants_images
+  `;
+
   await client`
     DROP TABLE IF EXISTS wants_visible_to
   `;

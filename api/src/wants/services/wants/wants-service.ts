@@ -9,7 +9,7 @@ import mime from 'mime-types';
 import {
   GeolocationCoordinates,
   Want,
-  WantRole,
+  WantMemberRole,
   WantVisibility,
 } from '../../models';
 import {NotFoundError} from '../../../errors';
@@ -41,7 +41,6 @@ interface WantRow {
   creatorId: string;
   title: string;
   description?: string;
-  imageURL?: string;
   visibility: WantVisibility;
   address: string;
   coordinates: [number, number];
@@ -56,7 +55,7 @@ interface WantMemberRow {
   id: string;
   wantId: string;
   userId: string;
-  role: WantRole;
+  role: WantMemberRole;
   createdAt: Date;
   deletedAt?: Date;
 }
@@ -69,6 +68,15 @@ interface WantVisibleToRow {
   deletedAt?: Date;
 }
 
+interface WantImageRow {
+  id: string;
+  wantId: string;
+  googleStorageBucket: string;
+  googleStorageFile: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface CreateWantOptions {
   creatorId: string;
   title: string;
@@ -79,17 +87,26 @@ interface CreateWantOptions {
   radiusInMeters: number;
 }
 
-interface GetHomeWantsFeedOptions {
+interface ListWantsOptions {
+  userId?: string;
+  orderBy?: {
+    column: 'createdAt';
+    direction: 'asc' | 'desc';
+  }[];
+}
+
+interface ListHomeFeedOptions {
   userId: string;
   geolocationCoordinates?: GeolocationCoordinates;
 }
 
 interface UpdateWantOptions {
-  adminsIds?: string[];
+  administratorsIds?: string[];
   membersIds?: string[];
   title?: string;
   description?: string;
   visibility?: WantVisibility;
+  visibleTo?: string[];
   image?: {
     data: Buffer;
     mimeType: string;
@@ -100,6 +117,7 @@ class WantsService {
   private readonly wantsTable = 'wants';
   private readonly wantsMembersTable = 'wants_members';
   private readonly wantsVisibleToTable = 'wants_visible_to';
+  private readonly wantsImagesTable = 'wants_images';
 
   constructor(private readonly settings: WantsServiceSettings) {}
 
@@ -109,7 +127,7 @@ class WantsService {
     );
 
     if (!creator) {
-      throw new NotFoundError(`Creator user ${options.creatorId} not found`);
+      throw new NotFoundError(`User ${options.creatorId} not found`);
     }
 
     await this.validateWantTitle(options.title);
@@ -122,7 +140,7 @@ class WantsService {
     if (options.visibility === WantVisibility.Specific) {
       if (!options.visibleTo) {
         throw new RangeError(
-          `options.visibleTo must be defined when options.visibility is ${WantVisibility.Specific}`
+          `options.visibleTo must be defined when options.visibility is ${options.visibility}`
         );
       }
 
@@ -130,7 +148,7 @@ class WantsService {
         const user = await this.settings.usersService.getUserById(userId);
 
         if (!user) {
-          throw new NotFoundError(`Visible To User ${userId} not found`);
+          throw new NotFoundError(`User ${userId} not found`);
         }
 
         visibleTo.push(userId);
@@ -182,20 +200,20 @@ class WantsService {
           VALUES(
             ${wantId},
             ${creator.id},
-            ${WantRole.Administrator}
+            ${WantMemberRole.Administrator}
           )
         `;
 
-      for (const userId of visibleTo) {
+      if (visibleTo.length > 0) {
         await sql`
-          INSERT INTO ${sql(this.wantsVisibleToTable)}(
-            ${sql('wantId')},
-            ${sql('userId')}
-          )
-          VALUES(
-            ${wantId},
-            ${userId}
-          )
+          INSERT INTO ${sql(this.wantsVisibleToTable)} ${sql(
+          visibleTo.map(userId => {
+            return {
+              wantId,
+              userId,
+            };
+          })
+        )}
         `;
       }
 
@@ -234,23 +252,25 @@ class WantsService {
 
     const visibleTo: WantVisibleToRow[] = await sql`
       SELECT ${sql('userId')}
-      FROM ${sql(this.wantsMembersTable)}
+      FROM ${sql(this.wantsVisibleToTable)}
       WHERE ${sql('deletedAt')} IS NULL
       AND ${sql('wantId')} = ${wantId}
     `;
+
+    const imageURL = await this.getWantImageURL(wantId);
 
     const want: Want = {
       id: wantId,
       creatorId: wantRow.creatorId,
       administratorsIds: members
-        .filter(member => member.role === WantRole.Administrator)
+        .filter(member => member.role === WantMemberRole.Administrator)
         .map(member => member.userId),
       membersIds: members
-        .filter(member => member.role === WantRole.Member)
+        .filter(member => member.role === WantMemberRole.Member)
         .map(member => member.userId),
       title: wantRow.title,
       description: wantRow.description,
-      imageURL: wantRow.imageURL,
+      imageURL,
       visibility: wantRow.visibility,
       visibleTo: visibleTo.map(visibleTo => visibleTo.userId),
       address: wantRow.address,
@@ -266,304 +286,258 @@ class WantsService {
     return want;
   }
 
-  // async updateWantById(
-  //   wantId: string,
-  //   updateWantOptions: UpdateWantOptions
-  // ): Promise<Want> {
-  //   let queryText = `
-  //     UPDATE ${this.wantsTable}
-  //     SET updated_at = CURRENT_TIMESTAMP
-  //   `;
+  async listWants(options: ListWantsOptions): Promise<Want[]> {
+    const {sql} = this.settings;
 
-  //   const queryValues = [];
+    const rows: {id: string}[] = await sql`
+      SELECT w.id
+      FROM ${sql(this.wantsTable)} w
+      ${
+        options.userId
+          ? sql`JOIN ${sql(this.wantsMembersTable)} wm ON w.${sql(
+              'id'
+            )} = wm.${sql('wantId')}`
+          : sql``
+      }
+      WHERE w.${sql('deletedAt')} IS NULL
+      ${
+        options.userId
+          ? sql`AND wm.${sql('userId')} = ${options.userId}`
+          : sql``
+      }
+      ${
+        options.orderBy
+          ? sql`ORDER BY ${options.orderBy.map((x, i) => {
+              return `${i ? sql`,` : sql``} ${sql(x.column)} ${
+                x.direction === 'asc' ? sql`ASC` : sql`DESC`
+              }`;
+            })}`
+          : sql``
+      }
+    `;
 
-  //   if (updateWantOptions.title) {
-  //     queryText = `${queryText}, title = $1`,
-  //   }
+    return await Promise.all(
+      rows.map(async wantRow => {
+        const want = await this.getWantById(wantRow.id);
 
-  //   const wantDocRef = this.settings.firestore.client.doc(
-  //     `${this.settings.firestore.collections.wants}/${wantId}`
-  //   );
+        if (!want) {
+          throw new Error(
+            `Want ${wantRow.id} not found. This should not happen`
+          );
+        }
 
-  //   const wantDocSnapshot = await wantDocRef.get();
+        return want;
+      })
+    );
+  }
 
-  //   const wantData = wantDocSnapshot.data();
+  async updateWantById(
+    wantId: string,
+    options: UpdateWantOptions
+  ): Promise<Want> {
+    const want = await this.getWantById(wantId);
 
-  //   if (!wantData) {
-  //     throw new NotFoundError(`Want ${wantId} not found`);
-  //   }
+    if (!want) {
+      throw new NotFoundError(`Want ${wantId} not found`);
+    }
 
-  //   if (wantData.deletedAt) {
-  //     throw new NotFoundError(`Want ${wantId} not found`);
-  //   }
+    if (options.administratorsIds) {
+      await this.validateWantAdministratorsIds(options.administratorsIds);
+    }
 
-  //   if (!Object.values(updateWantOptions).some(option => option)) {
-  //     return (await this.getWantById(wantId))!;
-  //   }
+    if (options.membersIds) {
+      await this.validateWantMembersIds(options.membersIds);
+    }
 
-  //   await this.settings.firestore.client.runTransaction(async t => {
-  //     if (updateWantOptions.adminsIds) {
-  //       await this.validateWantAdminsIds(updateWantOptions.adminsIds);
+    if (options.title) {
+      await this.validateWantTitle(options.title);
+    }
 
-  //       wantData.adminsIds = updateWantOptions.adminsIds;
-  //     }
+    if (options.description) {
+      await this.validateWantDescription(options.description);
+    }
 
-  //     if (updateWantOptions.membersIds) {
-  //       await this.validateWantMembersIds(updateWantOptions.membersIds);
+    if (options.visibility === WantVisibility.Specific) {
+      if (!options.visibleTo) {
+        throw new RangeError(
+          `options.visibleTo must be defined when options.visibility is ${options.visibility}`
+        );
+      }
 
-  //       wantData.membersIds = updateWantOptions.membersIds;
-  //     }
+      await this.validateWantVisibleTo(options.visibleTo);
+    }
 
-  //     if (updateWantOptions.title) {
-  //       await this.validateWantTitle(updateWantOptions.title);
+    if (options.image) {
+      await this.validateWantImage(options.image.data);
+      await this.uploadWantImage(want.id, {
+        data: options.image.data,
+        mimeType: options.image.mimeType,
+      });
+    }
 
-  //       wantData.title = updateWantOptions.title;
-  //     }
+    const {sql} = this.settings;
 
-  //     if (updateWantOptions.description) {
-  //       await this.validateWantDescription(updateWantOptions.description);
+    await sql.begin(async sql => {
+      if (options.administratorsIds) {
+        await sql`
+          UPDATE ${this.wantsMembersTable} 
+          SET role = ${WantMemberRole.Administrator}
+          WHERE ${sql('wantId')} = ${want.id}
+          AND ${sql('userId')} IN ${options.administratorsIds}
+        `;
+      }
 
-  //       wantData.description = updateWantOptions.description;
-  //     }
+      if (options.membersIds) {
+        await sql`
+          UPDATE ${this.wantsMembersTable} 
+          SET role = ${WantMemberRole.Member}
+          WHERE ${sql('wantId')} = ${want.id}
+          AND ${sql('userId')} IN ${options.membersIds}
+        `;
+      }
 
-  //     if (updateWantOptions.visibility) {
-  //       wantData.visibility = await this.getWantDocVisibility(
-  //         updateWantOptions.visibility
-  //       );
-  //     }
+      const wantUpdate = {
+        title: options.title || want.title,
+        description: options.description || want.description,
+        visibility: options.visibility || want.visibility,
+      };
 
-  //     if (updateWantOptions.image) {
-  //       const wantDocImage = await this.uploadWantImage(
-  //         wantId,
-  //         updateWantOptions.image
-  //       );
+      await sql`
+        UPDATE ${sql(this.wantsTable)}
+        SET 
+          title = ${wantUpdate.title}
+          ${
+            wantUpdate.description
+              ? sql`, description = ${wantUpdate.description}`
+              : sql``
+          }
+          , visibility = ${wantUpdate.visibility}
+          , ${sql('updatedAt')} = now()
+        WHERE id = ${want.id}
+      `;
 
-  //       wantData.image = wantDocImage;
-  //     }
+      if (options.visibility === WantVisibility.Specific && options.visibleTo) {
+        await sql`
+          UPDATE ${sql(this.wantsVisibleToTable)}
+          SET ${sql('deletedAt')} = now()
+          WHERE ${sql('wantId')} = ${want.id}
+        `;
 
-  //     t.update(wantDocRef, {
-  //       ...wantData,
-  //       updatedAt: FieldValue.serverTimestamp(),
-  //     });
-  //   });
+        await sql`
+          INSERT INTO ${sql(this.wantsVisibleToTable)} ${sql(
+          options.visibleTo.map(userId => {
+            return {
+              wantId: want.id,
+              userId,
+            };
+          })
+        )}
+        `;
+      }
+    });
 
-  //   return (await this.getWantById(wantId))!;
-  // }
+    const updatedWant = await this.getWantById(wantId);
 
-  // async getHomeWantsFeed(options: GetHomeWantsFeedOptions): Promise<Want[]> {
-  //   // TODO(Marcus): iterate and optimize this, performance and user experience wise.
+    if (!updatedWant) {
+      throw new Error(
+        `Updated Want ${wantId} not found. This should not happen`
+      );
+    }
 
-  //   const listFriendsWantsDocs = async (userId: string) => {
-  //     const userFriends =
-  //       await this.settings.friendsService.listFriendsByUserId(userId);
+    return updatedWant;
+  }
 
-  //     if (userFriends.length === 0) {
-  //       return [];
-  //     }
+  private async getWantImageURL(wantId: string): Promise<string | undefined> {
+    const {sql, storage} = this.settings;
 
-  //     const wantsDocsSnapshots = await this.settings.firestore.client
-  //       .collection(this.settings.firestore.collections.wants)
-  //       .withConverter(wantDocConverter)
-  //       .where('deletedAt', '==', null)
-  //       .where('creatorId', 'in', userFriends)
-  //       .where('visibility.visibleTo', '==', 'friends')
-  //       .get();
+    const [row]: [WantImageRow?] = await sql`
+      SELECT 
+        ${sql('googleStorageBucket')},
+        ${sql('googleStorageFile')}
+      FROM ${sql(this.wantsImagesTable)}
+      WHERE ${sql('wantId')} = ${wantId}
+    `;
+    if (!row) {
+      return;
+    }
 
-  //     return wantsDocsSnapshots.docs.map(wantSnapshot => wantSnapshot.data());
-  //   };
+    const expires = dayjs().add(1, 'hour').toDate();
 
-  //   const listUserTargetedWantsDocs = async (userId: string) => {
-  //     const wantsSnapshot = await this.settings.firestore.client
-  //       .collection(this.settings.firestore.collections.wants)
-  //       .withConverter(wantDocConverter)
-  //       .where('deletedAt', '==', null)
-  //       .where('visibility.visibleTo', 'array-contains', userId)
-  //       .get();
+    const [imageURL] = await storage.client
+      .bucket(row.googleStorageBucket)
+      .file(row.googleStorageFile)
+      .getSignedUrl({
+        action: 'read',
+        expires,
+      });
 
-  //     return wantsSnapshot.docs.map(wantSnapshot => wantSnapshot.data());
-  //   };
+    return imageURL;
+  }
 
-  //   const listPublicWantsDocs = async () => {
-  //     const wantsSnapshot = await this.settings.firestore.client
-  //       .collection(this.settings.firestore.collections.wants)
-  //       .withConverter(wantDocConverter)
-  //       .where('deletedAt', '==', null)
-  //       .where('visibility.visibleTo', '==', 'public')
-  //       .get();
+  private async uploadWantImage(
+    wantId: string,
+    // TODO(Marcus): Check mimeType from Buffer? Could use https://github.com/sindresorhus/file-type but converting this project to ESM seems a bit of a hassle at this point.
+    image: {data: Buffer; mimeType: string}
+  ): Promise<{storage: {bucket: string; fileName: string}}> {
+    const want = await this.getWantById(wantId);
 
-  //     return wantsSnapshot.docs.map(wantSnapshot => wantSnapshot.data());
-  //   };
+    if (!want) {
+      throw new NotFoundError(`Want ${wantId} not found`);
+    }
 
-  //   interface CalculateFeedScoreOptions {
-  //     wantDoc: WantDoc;
-  //     userGeolocationCoordinates?: GeolocationCoordinates;
-  //   }
+    // See https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
+    const allowedMimeTypes = [
+      'image/bmp',
+      'image/jpeg',
+      'image/png',
+      'image/svg+xml',
+      'image/webp',
+    ];
 
-  //   // TODO(Marcus): This could be an interesting place to use machine learning. Maybe have it receive the userId too so the feed can be tailored.
-  //   const calculateFeedScore = (options: CalculateFeedScoreOptions): number => {
-  //     const calculateVisibilityScore = (wantDoc: WantDoc): number => {
-  //       switch (wantDoc.visibility.visibleTo) {
-  //         case WantVisibleTo.Friends:
-  //           return -0.2;
-  //         case WantVisibleTo.Public:
-  //           return -0.15;
-  //         default:
-  //           return -0.25;
-  //       }
-  //     };
+    if (!allowedMimeTypes.includes(image.mimeType)) {
+      throw new RangeError(
+        `Invalid image mimeType ${
+          image.mimeType
+        }. Allowed values: ${allowedMimeTypes.join(',')}`
+      );
+    }
 
-  //     const calculateCreatedAtScore = (want: WantDoc): number => {
-  //       const today = dayjs();
-  //       const createdAtDate = dayjs(want.createdAt);
+    await this.validateWantImage(image.data);
 
-  //       switch (today.diff(createdAtDate, 'day')) {
-  //         case 0:
-  //         case 1:
-  //           return -0.25;
-  //         case 2:
-  //         case 3:
-  //           return -0.2;
-  //         default:
-  //           return -0.15;
-  //       }
-  //     };
+    const {sql, storage} = this.settings;
 
-  //     const calculateMembersCountScore = (want: WantDoc): number => {
-  //       const membersCount = want.membersIds.length;
+    const fileName = `images/${wantId}.${mime.extension(image.mimeType)}`;
 
-  //       if (membersCount > 4) {
-  //         return -0.25;
-  //       } else if (membersCount > 2) {
-  //         return -0.2;
-  //       } else {
-  //         return -0.15;
-  //       }
-  //     };
+    const gcsFile = storage.client
+      .bucket(storage.buckets.wantsAssets)
+      .file(fileName);
 
-  //     const calculateLocationScore = (
-  //       wantDoc: WantDoc,
-  //       userGeolocationCoordinates?: GeolocationCoordinates
-  //     ): number => {
-  //       if (!wantDoc.visibility.location) {
-  //         return 0;
-  //       }
+    await gcsFile.save(image.data);
 
-  //       if (!userGeolocationCoordinates) {
-  //         return 0;
-  //       }
+    await sql`
+      INSERT INTO ${sql(this.wantsImagesTable)}(
+        ${sql('wantId')},
+        ${sql('googleStorageBucket')},
+        ${sql('googleStorageFile')}
+      ) VALUES(
+        ${want.id},
+        ${gcsFile.bucket.name},
+        ${gcsFile.name}
+      )
+      ON CONFLICT(${sql('wantId')}) DO UPDATE
+      SET
+        ${sql('googleStorageBucket')} = ${gcsFile.bucket.name},
+        ${sql('googleStorageFile')} = ${gcsFile.name},
+        ${sql('updatedAt')} = now()
+    `;
 
-  //       const distanceInKm = distanceBetween(
-  //         [
-  //           wantDoc.visibility.location.geometry.coordinates.latitude,
-  //           wantDoc.visibility.location.geometry.coordinates.longitude,
-  //         ],
-  //         [
-  //           userGeolocationCoordinates.latitude,
-  //           userGeolocationCoordinates.longitude,
-  //         ]
-  //       );
-
-  //       if (distanceInKm < 4) {
-  //         return -0.25;
-  //       } else if (distanceInKm < 8) {
-  //         return -0.2;
-  //       } else {
-  //         return -0.15;
-  //       }
-  //     };
-
-  //     const score =
-  //       calculateVisibilityScore(options.wantDoc) +
-  //       calculateCreatedAtScore(options.wantDoc) +
-  //       calculateMembersCountScore(options.wantDoc) +
-  //       calculateLocationScore(
-  //         options.wantDoc,
-  //         options.userGeolocationCoordinates
-  //       );
-
-  //     return score;
-  //   };
-
-  //   const user = await this.settings.usersService.getUserById(options.userId);
-
-  //   if (!user) {
-  //     throw new NotFoundError(`User ${options.userId} not found`);
-  //   }
-
-  //   const [userFriendsWantDocs, userTargetedWantDocs, publicWantDocs] =
-  //     await Promise.all([
-  //       listFriendsWantsDocs(user.id),
-  //       listUserTargetedWantsDocs(user.id),
-  //       listPublicWantsDocs(),
-  //     ]);
-
-  //   const relevantWantDocs = [
-  //     ...userFriendsWantDocs,
-  //     ...userTargetedWantDocs,
-  //     ...publicWantDocs,
-  //   ];
-
-  //   const orderedRelevantWantDocs = orderBy(relevantWantDocs, wantDoc =>
-  //     calculateFeedScore({
-  //       wantDoc,
-  //       userGeolocationCoordinates: options.geolocationCoordinates,
-  //     })
-  //   );
-
-  //   return await Promise.all(
-  //     orderedRelevantWantDocs.map(async wantDoc => {
-  //       return await this.toWant(wantDoc);
-  //     })
-  //   );
-  // }
-
-  // private async uploadWantImage(
-  //   wantId: string,
-  //   // TODO(Marcus): Check mimeType from Buffer? Could use https://github.com/sindresorhus/file-type but converting this project to ESM seems a bit of a hassle at this point.
-  //   image: {data: Buffer; mimeType: string}
-  // ): Promise<WantDocImage> {
-  //   const want = await this.getWantById(wantId);
-
-  //   if (!want) {
-  //     throw new NotFoundError(`Want ${wantId} not found`);
-  //   }
-
-  //   // See https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
-  //   const allowedMimeTypes = [
-  //     'image/bmp',
-  //     'image/jpeg',
-  //     'image/png',
-  //     'image/svg+xml',
-  //     'image/webp',
-  //   ];
-
-  //   if (!allowedMimeTypes.includes(image.mimeType)) {
-  //     throw new RangeError(
-  //       `Invalid image mimeType ${
-  //         image.mimeType
-  //       }. Allowed values: ${allowedMimeTypes.join(',')}`
-  //     );
-  //   }
-
-  //   await this.validateWantImage(image.data);
-
-  //   const fileName = `images/${wantId}.${mime.extension(image.mimeType)}`;
-
-  //   const gcsFile = this.settings.storage.client
-  //     .bucket(this.settings.storage.buckets.wantsAssets)
-  //     .file(fileName);
-
-  //   await gcsFile.save(image.data);
-
-  //   const wantDocImage: WantDocImage = {
-  //     gcs: {
-  //       bucket: this.settings.storage.buckets.wantsAssets,
-  //       fileName,
-  //     },
-  //   };
-
-  //   return wantDocImage;
-  // }
+    return {
+      storage: {
+        bucket: gcsFile.bucket.name,
+        fileName: gcsFile.name,
+      },
+    };
+  }
 
   private async geocodeAddress(address: string): Promise<GeocodeResult> {
     const geocodeAddressResponse =
@@ -659,22 +633,22 @@ class WantsService {
     return;
   }
 
-  private async validateWantAdminsIds(adminsIds: string[]) {
-    for (const adminId of adminsIds) {
-      const adminUser = await this.settings.usersService.getUserById(adminId);
+  private async validateWantAdministratorsIds(adminsIds: string[]) {
+    for (const userId of adminsIds) {
+      const user = await this.settings.usersService.getUserById(userId);
 
-      if (!adminUser) {
-        throw new NotFoundError(`User ${adminId} not found`);
+      if (!user) {
+        throw new NotFoundError(`User ${userId} not found`);
       }
     }
   }
 
   private async validateWantMembersIds(membersIds: string[]) {
-    for (const memberId of membersIds) {
-      const memberUser = await this.settings.usersService.getUserById(memberId);
+    for (const userId of membersIds) {
+      const user = await this.settings.usersService.getUserById(userId);
 
-      if (!memberUser) {
-        throw new NotFoundError(`User ${memberId} not found`);
+      if (!user) {
+        throw new NotFoundError(`User ${userId} not found`);
       }
     }
   }
@@ -698,6 +672,16 @@ class WantsService {
       throw new RangeError(
         `${explicitContentCategory} detected in description: ${text}. Explicit content is not allowed.`
       );
+    }
+  }
+
+  private async validateWantVisibleTo(visibleToUserIds: string[]) {
+    for (const userId of visibleToUserIds) {
+      const user = await this.settings.usersService.getUserById(userId);
+
+      if (!user) {
+        throw new NotFoundError(`User ${userId} not found`);
+      }
     }
   }
 

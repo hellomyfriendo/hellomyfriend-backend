@@ -1,6 +1,6 @@
-enum WantRole {
+enum WantMemberRole {
   Administrator = 'administrator',
   Member = 'member',
 }
 
-export {WantRole};
+export {WantMemberRole};
