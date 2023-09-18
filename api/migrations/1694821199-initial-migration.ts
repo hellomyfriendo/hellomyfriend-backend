@@ -2,6 +2,10 @@ import {Sql} from 'postgres';
 
 exports.up = async (client: Sql) => {
   await client`
+    CREATE EXTENSION IF NOT EXISTS postgis
+  `;
+
+  await client`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
@@ -36,7 +40,8 @@ exports.up = async (client: Sql) => {
       description TEXT,
       visibility TEXT NOT NULL,
       address TEXT NOT NULL,
-      coordinates POINT NOT NULL,
+      latitude DOUBLE PRECISION NOT NULL,
+      longitude DOUBLE PRECISION NOT NULL,
       google_place_id TEXT NOT NULL,
       radius_in_meters INTEGER NOT NULL,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
@@ -86,15 +91,15 @@ exports.down = async (client: Sql) => {
   `;
 
   await client`
-    DROP TABLE IF EXISTS wants_visible_to
+    DROP TABLE IF EXISTS wants_visible_to;
   `;
 
   await client`
-    DROP TABLE IF EXISTS wants_members
+    DROP TABLE IF EXISTS wants_members;
   `;
 
   await client`
-    DROP TABLE IF EXISTS wants
+    DROP TABLE IF EXISTS wants;
   `;
 
   await client`
@@ -102,10 +107,10 @@ exports.down = async (client: Sql) => {
   `;
 
   await client`
-    DROP TABLE IF EXISTS friend_requests
+    DROP TABLE IF EXISTS friend_requests;
   `;
 
   await client`
-    DROP TABLE IF EXISTS users
+    DROP TABLE IF EXISTS users;
   `;
 };

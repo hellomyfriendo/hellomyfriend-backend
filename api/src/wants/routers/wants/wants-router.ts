@@ -2,11 +2,7 @@ import * as express from 'express';
 import {celebrate, Joi, Segments} from 'celebrate';
 import {StatusCodes} from 'http-status-codes';
 import {WantsService} from '../../services';
-import {
-  GeolocationCoordinates,
-  WantMemberRole,
-  WantVisibility,
-} from '../../models';
+import {GeolocationCoordinates, WantVisibility} from '../../models';
 import {UnauthorizedError} from '../../../errors/unauthorized-error';
 import {ForbiddenError, NotFoundError} from '../../../errors';
 
@@ -158,60 +154,48 @@ class WantsRouter {
       }
     });
 
-    // router.get(
-    //   '/home-feed',
-    //   celebrate({
-    //     [Segments.QUERY]: Joi.object()
-    //       .keys({
-    //         latitude: Joi.number()
-    //           .min(GeolocationCoordinates.minLatitude)
-    //           .max(GeolocationCoordinates.maxLatitude),
-    //         longitude: Joi.number()
-    //           .min(GeolocationCoordinates.minLongitude)
-    //           .max(GeolocationCoordinates.maxLongitude),
-    //       })
-    //       .required(),
-    //   }),
-    //   async (req, res, next) => {
-    //     try {
-    //       const userId = req.userId;
+    router.get(
+      '/home-feed',
+      celebrate({
+        [Segments.QUERY]: Joi.object()
+          .keys({
+            latitude: Joi.number()
+              .min(GeolocationCoordinates.minLatitude)
+              .max(GeolocationCoordinates.maxLatitude)
+              .required(),
+            longitude: Joi.number()
+              .min(GeolocationCoordinates.minLongitude)
+              .max(GeolocationCoordinates.maxLongitude)
+              .required(),
+          })
+          .required(),
+      }),
+      async (req, res, next) => {
+        try {
+          const userId = req.userId;
 
-    //       if (!userId) {
-    //         throw new UnauthorizedError('User not found in the request');
-    //       }
+          if (!userId) {
+            throw new UnauthorizedError('User not found in the request');
+          }
 
-    //       let geolocationCoordinates;
+          const {latitude, longitude} = req.query;
 
-    //       if (req.query.latitude || req.query.longitude) {
-    //         if (!req.query.latitude) {
-    //           throw new RangeError(
-    //             'latitude is required when longitude is set'
-    //           );
-    //         }
+          const geolocationCoordinates = new GeolocationCoordinates(
+            Number.parseFloat(latitude as string),
+            Number.parseFloat(longitude as string)
+          );
 
-    //         if (!req.query.longitude) {
-    //           throw new RangeError(
-    //             'longitude is required when latitude is set'
-    //           );
-    //         }
+          const wants = await this.settings.wantsService.listHomeFeed({
+            userId,
+            geolocationCoordinates,
+          });
 
-    //         geolocationCoordinates = new GeolocationCoordinates(
-    //           Number.parseFloat(req.query.latitude as string),
-    //           Number.parseFloat(req.query.longitude as string)
-    //         );
-    //       }
-
-    //       const wantsFeed = await this.settings.wantsService.getHomeWantsFeed({
-    //         userId: userId,
-    //         geolocationCoordinates,
-    //       });
-
-    //       return res.json(wantsFeed);
-    //     } catch (err) {
-    //       return next(err);
-    //     }
-    //   }
-    // );
+          return res.json(wants);
+        } catch (err) {
+          return next(err);
+        }
+      }
+    );
 
     return router;
   }

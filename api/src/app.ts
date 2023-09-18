@@ -34,18 +34,6 @@ const sql = postgres({
     ...postgres.camel,
     undefined: null,
   },
-  types: {
-    point: {
-      to: 600,
-      from: [600],
-      serialize: ([x, y]: [number, number]) => '(' + x + ',' + y + ')',
-      parse: (x: string) =>
-        x
-          .slice(1, -1)
-          .split(',')
-          .map(x => +x),
-    },
-  },
 });
 
 firebaseAdmin.initializeApp({

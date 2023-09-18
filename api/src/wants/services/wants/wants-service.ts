@@ -4,6 +4,7 @@ import {Storage} from '@google-cloud/storage';
 import {ImageAnnotatorClient} from '@google-cloud/vision';
 import {Client, GeocodeResult} from '@googlemaps/google-maps-services-js';
 import dayjs from 'dayjs';
+import {distanceBetween} from 'geofire-common';
 import {orderBy} from 'lodash';
 import mime from 'mime-types';
 import {
@@ -43,7 +44,8 @@ interface WantRow {
   description?: string;
   visibility: WantVisibility;
   address: string;
-  coordinates: [number, number];
+  latitude: number;
+  longitude: number;
   googlePlaceId: string;
   radiusInMeters: number;
   createdAt: Date;
@@ -97,7 +99,7 @@ interface ListWantsOptions {
 
 interface ListHomeFeedOptions {
   userId: string;
-  geolocationCoordinates?: GeolocationCoordinates;
+  geolocationCoordinates: GeolocationCoordinates;
 }
 
 interface UpdateWantOptions {
@@ -171,7 +173,8 @@ class WantsService {
           description,
           visibility,
           address,
-          coordinates,
+          latitude,
+          longitude,
           ${sql('googlePlaceId')},
           ${sql('radiusInMeters')}
         )
@@ -181,10 +184,8 @@ class WantsService {
           ${options.description ? options.description : null},
           ${options.visibility},
           ${geocodeResult.formatted_address},
-          ${[
-            geocodeResult.geometry.location.lat,
-            geocodeResult.geometry.location.lng,
-          ]},
+          ${geocodeResult.geometry.location.lat},
+          ${geocodeResult.geometry.location.lng},
           ${geocodeResult.place_id},
           ${options.radiusInMeters}
         )
@@ -275,8 +276,8 @@ class WantsService {
       visibleTo: visibleTo.map(visibleTo => visibleTo.userId),
       address: wantRow.address,
       coordinates: {
-        latitude: wantRow.coordinates[0],
-        longitude: wantRow.coordinates[1],
+        latitude: wantRow.latitude,
+        longitude: wantRow.longitude,
       },
       radiusInMeters: wantRow.radiusInMeters,
       createdAt: wantRow.createdAt,
@@ -289,7 +290,7 @@ class WantsService {
   async listWants(options: ListWantsOptions): Promise<Want[]> {
     const {sql} = this.settings;
 
-    const rows: {id: string}[] = await sql`
+    const wantsIdsRows: {id: string}[] = await sql`
       SELECT w.id
       FROM ${sql(this.wantsTable)} w
       ${
@@ -302,7 +303,9 @@ class WantsService {
       WHERE w.${sql('deletedAt')} IS NULL
       ${
         options.userId
-          ? sql`AND wm.${sql('userId')} = ${options.userId}`
+          ? sql`AND wm.${sql('userId')} = ${options.userId} AND wm.${sql(
+              'deletedAt'
+            )} IS NULL`
           : sql``
       }
       ${
@@ -317,13 +320,152 @@ class WantsService {
     `;
 
     return await Promise.all(
-      rows.map(async wantRow => {
+      wantsIdsRows.map(async wantRow => {
         const want = await this.getWantById(wantRow.id);
 
         if (!want) {
           throw new Error(
             `Want ${wantRow.id} not found. This should not happen`
           );
+        }
+
+        return want;
+      })
+    );
+  }
+
+  async listHomeFeed(options: ListHomeFeedOptions): Promise<Want[]> {
+    interface Row {
+      id: string;
+      visibility: WantVisibility;
+      latitude: number;
+      longitude: number;
+    }
+
+    const calculateScore = (options: ListHomeFeedOptions, row: Row): number => {
+      let score = 0;
+
+      switch (row.visibility) {
+        case WantVisibility.Friends:
+          score += 2;
+          break;
+        case WantVisibility.Specific:
+          score += 1;
+          break;
+      }
+
+      const wantDistanceInKm = distanceBetween(
+        [
+          options.geolocationCoordinates.latitude,
+          options.geolocationCoordinates.longitude,
+        ],
+        [row.latitude, row.longitude]
+      );
+
+      if (wantDistanceInKm < 2) {
+        score += 2;
+      } else if (wantDistanceInKm < 15) {
+        score += 1;
+      }
+
+      return score;
+    };
+
+    const {sql, friendsService, usersService} = this.settings;
+
+    const user = await usersService.getUserById(options.userId);
+
+    if (!user) {
+      throw new NotFoundError(`User ${options.userId} not found`);
+    }
+
+    const userFriendships = await friendsService.listFriendships({
+      userId: user.id,
+    });
+
+    const userFriendsIds = userFriendships.map(friendship => {
+      if (friendship.user2Id !== user.id) {
+        return friendship.user2Id;
+      }
+      return friendship.user1Id;
+    });
+
+    const publicWantsRows: Row[] = await sql`
+      SELECT 
+        id,
+        visibility, 
+        latitude,
+        longitude
+      FROM ${sql(this.wantsTable)}
+      WHERE ${sql('deletedAt')} IS NULL
+      AND visibility = ${WantVisibility.Public}
+      AND ST_DWithin(ST_MakePoint(longitude, latitude)::geography, ST_MakePoint(${
+        options.geolocationCoordinates.longitude
+      }, ${options.geolocationCoordinates.latitude})::geography, ${sql(
+      'radiusInMeters'
+    )})
+    `;
+
+    console.log('publicWantsRows', publicWantsRows);
+
+    const friendsWantsRows: Row[] = await sql`
+      SELECT 
+        id,
+        visibility, 
+        latitude,
+        longitude
+      FROM ${sql(this.wantsTable)}
+      WHERE ${sql('deletedAt')} IS NULL
+      AND visibility = ${WantVisibility.Friends}
+      AND ${sql('creatorId')} IN ${sql(userFriendsIds)}
+      AND ST_DWithin(ST_MakePoint(longitude, latitude)::geography, ST_MakePoint(${
+        options.geolocationCoordinates.longitude
+      }, ${options.geolocationCoordinates.latitude})::geography, ${sql(
+      'radiusInMeters'
+    )})
+    `;
+
+    console.log('friendsWantsRows', friendsWantsRows);
+
+    const visibleToWantsRows: Row[] = await sql`
+      SELECT 
+        w.id,
+        w.visibility, 
+        w.latitude,
+        w.longitude
+      FROM ${sql(this.wantsTable)} w
+      JOIN ${sql(this.wantsVisibleToTable)} wv ON w.id = wv.${sql('wantId')}
+      WHERE w.${sql('deletedAt')} IS NULL
+      AND w.visibility = ${WantVisibility.Specific}
+      AND ST_DWithin(ST_MakePoint(longitude, latitude)::geography, ST_MakePoint(${
+        options.geolocationCoordinates.longitude
+      }, ${options.geolocationCoordinates.latitude})::geography, ${sql(
+      'radiusInMeters'
+    )})
+      AND wv.${sql('deletedAt')} IS NULL
+      AND wv.${sql('userId')} = ${user.id}
+    `;
+
+    console.log('visibleToWantsRows', visibleToWantsRows);
+
+    const rows = [
+      ...publicWantsRows,
+      ...friendsWantsRows,
+      ...visibleToWantsRows,
+    ];
+
+    const orderedRows = orderBy(
+      rows,
+      row => calculateScore(options, row),
+      'desc'
+    );
+
+    return await Promise.all(
+      orderedRows.map(async row => {
+        const want = await this.getWantById(row.id);
+
+        if (!want) {
+          throw new Error(`Want ${row.id} not found. This should not happen`);
         }
 
         return want;

@@ -19,7 +19,7 @@ services:
       database:
         condition: service_healthy
   database:
-    image: 'postgres:15'
+    image: 'postgis/postgis:15-3.4'
     ports:
       - ${PGPORT}:${PGPORT}
     environment:
