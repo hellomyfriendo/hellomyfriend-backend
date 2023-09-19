@@ -12,13 +12,15 @@ locals {
     "iam.googleapis.com",
     "language.googleapis.com",
     "maps-backend.googleapis.com",
+    "monitoring.googleapis.com",
     "run.googleapis.com",
     "secretmanager.googleapis.com",
     "servicenetworking.googleapis.com",
     "serviceusage.googleapis.com",
     "sourcerepo.googleapis.com",
     "sqladmin.googleapis.com",
-    "vision.googleapis.com"
+    "vision.googleapis.com",
+    "vpcaccess.googleapis.com"
   ]
 }
 
