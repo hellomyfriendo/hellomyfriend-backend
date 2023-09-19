@@ -91,7 +91,7 @@ const wantsService = new WantsService({
   usersService: usersService,
 });
 
-const healthCheckRouter = new HealthCheckRouter().router;
+const healthCheckRouter = new HealthCheckRouter({sql}).router;
 
 const friendsRouter = new FriendsRouter({friendsService: friendsService})
   .router;

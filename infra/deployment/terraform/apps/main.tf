@@ -36,7 +36,7 @@ module "api" {
   all_users_ingress_tag_value_id  = var.all_users_ingress_tag_value_id
   shared_vpc_network_host         = var.shared_vpc_network_host
   shared_vpc_network_name         = var.shared_vpc_network_name
-  vpc_access_connector_id         = var.vpc_access_connector_id
+  vpc_access_connector_name       = var.vpc_access_connector_name
   region                          = var.region
   confidential_kms_crypto_key     = var.confidential_kms_crypto_key
   api_image                       = var.api_image

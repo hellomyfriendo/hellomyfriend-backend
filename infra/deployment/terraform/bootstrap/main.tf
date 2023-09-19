@@ -44,7 +44,7 @@ module "apps" {
   all_users_ingress_tag_value     = var.all_users_ingress_tag_value
   shared_vpc_network_host         = var.shared_vpc_network_host
   shared_vpc_network_name         = var.shared_vpc_network_name
-  vpc_access_connector_id         = var.vpc_access_connector_id
+  vpc_access_connector_name       = var.vpc_access_connector_name
   region                          = var.region
   cloudbuild_apps_sa_email        = module.iam.cloudbuild_apps_sa_email
   api_sa_email                    = module.iam.api_sa_email

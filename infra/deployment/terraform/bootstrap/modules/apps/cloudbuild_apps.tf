@@ -29,7 +29,7 @@ resource "google_cloudbuild_trigger" "apps" {
     _ALL_USERS_INGRESS_TAG_VALUE_ID  = data.google_tags_tag_value.all_users_ingress.id
     _SHARED_VPC_NETWORK_HOST         = var.shared_vpc_network_host
     _SHARED_VPC_NETWORK_NAME         = var.shared_vpc_network_name
-    _VPC_ACCESS_CONNECTOR_ID         = var.vpc_access_connector_id
+    _VPC_ACCESS_CONNECTOR_NAME       = var.vpc_access_connector_name
     _REGION                          = var.region
     _PUBLIC_KMS_CRYPTO_KEY           = var.public_kms_crypto_key
     _INTERNAL_KMS_CRYPTO_KEY         = var.internal_kms_crypto_key

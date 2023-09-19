@@ -12,7 +12,7 @@ resource "google_storage_bucket" "wants_assets" {
   }
 }
 
-resource "google_storage_bucket_iam_member" "wants_assets_api_sa" {
+resource "google_storage_bucket_iam_member" "api_sa_wants_assets" {
   bucket = google_storage_bucket.wants_assets.name
   role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${var.api_sa_email}"

@@ -18,7 +18,7 @@ variable "shared_vpc_network_name" {
   description = "The Shared VPC network name."
 }
 
-variable "vpc_access_connector_id" {
+variable "vpc_access_connector_name" {
   type        = string
   description = "The Shared VPC Access Connector to use."
 }

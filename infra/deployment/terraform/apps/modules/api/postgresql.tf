@@ -28,7 +28,7 @@ module "postgresql_database" {
     authorized_networks                           = []
     ipv4_enabled                                  = false
     private_network                               = data.google_compute_network.shared_vpc_network.id
-    require_ssl                                   = false
+    require_ssl                                   = true
     allocated_ip_range                            = var.api_database_allocated_ip_range
     enable_private_path_for_google_cloud_services = true
   }
@@ -61,4 +61,10 @@ resource "google_secret_manager_secret_version" "database_password" {
   secret = google_secret_manager_secret.database_password.id
 
   secret_data = module.postgresql_database.generated_user_password
+}
+
+resource "google_secret_manager_secret_iam_member" "api_sa_database_password" {
+  secret_id = google_secret_manager_secret.database_password.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${var.api_sa_email}"
 }
