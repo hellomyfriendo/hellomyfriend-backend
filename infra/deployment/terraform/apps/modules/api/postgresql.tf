@@ -9,20 +9,20 @@ data "google_compute_zones" "available" {
 }
 
 module "postgresql_database" {
-  source                         = "GoogleCloudPlatform/sql-db/google//modules/postgresql"
-  version                        = "~> 13.0"
-  availability_type              = "REGIONAL"
-  database_version               = "POSTGRES_15"
-  db_name                        = local.database_name
-  enable_default_user            = true
-  encryption_key_name            = var.confidential_kms_crypto_key
-  name                           = local.database_name
-  project_id                     = data.google_project.project.project_id
-  random_instance_name           = true
-  region                         = var.region
-  tier                           = "db-f1-micro"
-  user_name                      = local.database_username
-  zone                           = data.google_compute_zones.available.names[0]
+  source               = "GoogleCloudPlatform/sql-db/google//modules/postgresql"
+  version              = "~> 13.0"
+  availability_type    = "REGIONAL"
+  database_version     = "POSTGRES_15"
+  db_name              = local.database_name
+  enable_default_user  = true
+  encryption_key_name  = var.confidential_kms_crypto_key
+  name                 = local.database_name
+  project_id           = data.google_project.project.project_id
+  random_instance_name = true
+  region               = var.region
+  tier                 = "db-f1-micro"
+  user_name            = local.database_username
+  zone                 = data.google_compute_zones.available.names[0]
 
   ip_configuration = {
     authorized_networks                           = []
@@ -45,7 +45,15 @@ resource "google_secret_manager_secret" "database_password" {
   secret_id = "api-database-password"
 
   replication {
-    automatic = true
+    user_managed {
+      replicas {
+        location = var.region
+
+        customer_managed_encryption {
+          kms_key_name = var.confidential_kms_crypto_key
+        }
+      }
+    }
   }
 }
 
