@@ -39,21 +39,22 @@ module "iam" {
 module "apps" {
   source = "./modules/apps"
 
-  org_id                      = var.org_id
-  all_users_ingress_tag_key   = var.all_users_ingress_tag_key
-  all_users_ingress_tag_value = var.all_users_ingress_tag_value
-  shared_vpc_network_name     = var.shared_vpc_network_name
-  api_subnetwork_name         = var.api_subnetwork_name
-  region                      = var.region
-  cloudbuild_apps_sa_email    = module.iam.cloudbuild_apps_sa_email
-  api_sa_email                = module.iam.api_sa_email
-  api_domain_name             = var.api_domain_name
-  public_kms_crypto_key       = module.kms.public_kms_crypto_key
-  internal_kms_crypto_key     = module.kms.internal_kms_crypto_key
-  confidential_kms_crypto_key = module.kms.confidential_kms_crypto_key
-  restricted_kms_crypto_key   = module.kms.restricted_kms_crypto_key
-  monitoring_alerts_emails    = var.monitoring_alerts_emails
-  sourcerepo_name             = var.sourcerepo_name
-  sourcerepo_branch_name      = var.sourcerepo_branch_name
-  tfstate_bucket              = google_storage_bucket.tfstate.name
+  org_id                                = var.org_id
+  all_users_ingress_tag_key             = var.all_users_ingress_tag_key
+  all_users_ingress_tag_value           = var.all_users_ingress_tag_value
+  shared_vpc_network_name               = var.shared_vpc_network_name
+  api_subnetwork_name                   = var.api_subnetwork_name
+  api_vpcaccess_connector_ip_cidr_range = var.api_vpcaccess_connector_ip_cidr_range
+  region                                = var.region
+  cloudbuild_apps_sa_email              = module.iam.cloudbuild_apps_sa_email
+  api_sa_email                          = module.iam.api_sa_email
+  api_domain_name                       = var.api_domain_name
+  public_kms_crypto_key                 = module.kms.public_kms_crypto_key
+  internal_kms_crypto_key               = module.kms.internal_kms_crypto_key
+  confidential_kms_crypto_key           = module.kms.confidential_kms_crypto_key
+  restricted_kms_crypto_key             = module.kms.restricted_kms_crypto_key
+  monitoring_alerts_emails              = var.monitoring_alerts_emails
+  sourcerepo_name                       = var.sourcerepo_name
+  sourcerepo_branch_name                = var.sourcerepo_branch_name
+  tfstate_bucket                        = google_storage_bucket.tfstate.name
 }

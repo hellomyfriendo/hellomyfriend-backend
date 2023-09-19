@@ -19,6 +19,11 @@ variable "api_subnetwork_name" {
   description = "The name of the Shared VPC subnetwork in which the API and it's connected resources will be attached to."
 }
 
+variable "api_vpcaccess_connector_ip_cidr_range" {
+  type        = string
+  description = "The API VPC Access Connector IP CIDR range. See https://cloud.google.com/vpc/docs/serverless-vpc-access#ip_address_ranges."
+}
+
 variable "project_id" {
   type        = string
   description = "The project ID."

@@ -3,11 +3,9 @@
 # }
 
 resource "google_vpc_access_connector" "connector" {
-  name = "api-vpc-access-connector"
-  subnet {
-    project_id = var.shared_vpc_network_name
-    name       = var.api_subnetwork_name
-  }
+  name          = "api-vpc-access-connector"
+  network       = var.api_subnetwork_name
+  ip_cidr_range = var.api_vpcaccess_connector_ip_cidr_range
 }
 
 # resource "google_cloud_run_v2_service" "api" {
