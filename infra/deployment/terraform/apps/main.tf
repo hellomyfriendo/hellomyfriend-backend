@@ -34,21 +34,10 @@ module "api" {
 
   org_id                         = var.org_id
   all_users_ingress_tag_value_id = var.all_users_ingress_tag_value_id
+  shared_vpc_network_name        = var.shared_vpc_network_name
+  api_subnetwork_name            = var.api_subnetwork_name
   region                         = var.region
   confidential_kms_crypto_key    = var.confidential_kms_crypto_key
   api_image                      = var.api_image
   api_sa_email                   = var.api_sa_email
-}
-
-resource "google_compute_global_address" "external_https_load_balancer" {
-  name = "external-https-lb"
-}
-
-module "external_https_load_balancer" {
-  source = "./modules/external_https_load_balancer"
-
-  region           = var.region
-  ip_address       = google_compute_global_address.external_https_load_balancer.address
-  api_domain_name  = var.api_domain_name
-  api_service_name = module.api.service_name
 }

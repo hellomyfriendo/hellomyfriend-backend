@@ -7,7 +7,6 @@ locals {
     "cloudkms.googleapis.com",
     "cloudresourcemanager.googleapis.com",
     "compute.googleapis.com",
-    "firestore.googleapis.com",
     "geocoding-backend.googleapis.com",
     "identitytoolkit.googleapis.com",
     "iam.googleapis.com",
@@ -15,8 +14,10 @@ locals {
     "maps-backend.googleapis.com",
     "run.googleapis.com",
     "secretmanager.googleapis.com",
+    "servicenetworking.googleapis.com",
     "serviceusage.googleapis.com",
     "sourcerepo.googleapis.com",
+    "sqladmin.googleapis.com",
     "vision.googleapis.com"
   ]
 }

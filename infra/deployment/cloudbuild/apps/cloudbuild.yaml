@@ -24,6 +24,8 @@ steps:
       - "TFSTATE_BUCKET=${_TFSTATE_BUCKET}"
       - "TF_VAR_org_id=${_ORG_ID}"
       - "TF_VAR_all_users_ingress_tag_value_id=${_ALL_USERS_INGRESS_TAG_VALUE_ID}"
+      - "TF_VAR_shared_vpc_network_name=${_SHARED_VPC_NETWORK_NAME}"
+      - "TF_VAR_api_subnetwork_name=${_API_SUBNETWORK_NAME}"
       - "TF_VAR_project_id=${PROJECT_ID}"
       - "TF_VAR_region=${_REGION}"
       - "TF_VAR_public_kms_crypto_key=${_PUBLIC_KMS_CRYPTO_KEY}"

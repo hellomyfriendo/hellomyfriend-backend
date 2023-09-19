@@ -8,8 +8,6 @@ provider "google-beta" {
   region  = var.region
 }
 
-
-
 module "enable_apis" {
   source = "./modules/enable_apis"
 }
@@ -36,15 +34,6 @@ module "iam" {
   restricted_kms_crypto_key   = module.kms.restricted_kms_crypto_key
   developers_group_email      = var.developers_group_email
   sourcerepo_name             = var.sourcerepo_name
-  tfstate_bucket              = google_storage_bucket.tfstate.name
-}
-
-module "firestore" {
-  source = "./modules/firestore"
-
-  location_id = var.region
-
-  depends_on = [module.enable_apis]
 }
 
 module "apps" {
@@ -53,6 +42,8 @@ module "apps" {
   org_id                      = var.org_id
   all_users_ingress_tag_key   = var.all_users_ingress_tag_key
   all_users_ingress_tag_value = var.all_users_ingress_tag_value
+  shared_vpc_network_name     = var.shared_vpc_network_name
+  api_subnetwork_name         = var.api_subnetwork_name
   region                      = var.region
   cloudbuild_apps_sa_email    = module.iam.cloudbuild_apps_sa_email
   api_sa_email                = module.iam.api_sa_email

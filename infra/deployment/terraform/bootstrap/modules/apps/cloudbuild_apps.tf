@@ -27,6 +27,8 @@ resource "google_cloudbuild_trigger" "apps" {
   substitutions = {
     _ORG_ID                         = var.org_id
     _ALL_USERS_INGRESS_TAG_VALUE_ID = data.google_tags_tag_value.all_users_ingress.id
+    _SHARED_VPC_NETWORK_NAME        = var.shared_vpc_network_name
+    _API_SUBNETWORK_NAME            = var.api_subnetwork_name
     _REGION                         = var.region
     _PUBLIC_KMS_CRYPTO_KEY          = var.public_kms_crypto_key
     _INTERNAL_KMS_CRYPTO_KEY        = var.internal_kms_crypto_key

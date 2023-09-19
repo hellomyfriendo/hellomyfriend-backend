@@ -13,6 +13,17 @@ variable "all_users_ingress_tag_value" {
   description = "The allUsersIngress tag value short name."
 }
 
+variable "shared_vpc_network_name" {
+  type        = string
+  description = "The Shared VPC network name."
+}
+
+# TODO(Marcus): Learn more about subnetwork planning in shared VPC
+variable "api_subnetwork_name" {
+  type        = string
+  description = "The name of the Shared VPC subnetwork in which the API and it's connected resources will be attached to."
+}
+
 variable "region" {
   type        = string
   description = "The default Google Cloud region for the created resources."
