@@ -27,7 +27,7 @@ module "postgresql_database" {
   ip_configuration = {
     authorized_networks                           = []
     ipv4_enabled                                  = false
-    private_network                               = data.google_compute_network.shared_vpc_network.id
+    private_network                               = data.google_compute_network.api.id
     require_ssl                                   = true
     allocated_ip_range                            = var.api_database_allocated_ip_range
     enable_private_path_for_google_cloud_services = true

@@ -20,6 +20,7 @@ locals {
     "sourcerepo.googleapis.com",
     "sqladmin.googleapis.com",
     "vision.googleapis.com",
+    "vpcaccess.googleapis.com"
   ]
 }
 

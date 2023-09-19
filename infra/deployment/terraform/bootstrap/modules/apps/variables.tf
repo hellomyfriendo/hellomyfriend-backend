@@ -13,21 +13,6 @@ variable "all_users_ingress_tag_value" {
   description = "The allUsersIngress tag value short name."
 }
 
-variable "shared_vpc_network_host" {
-  type        = string
-  description = "The Shared VPC network host project ID."
-}
-
-variable "shared_vpc_network_name" {
-  type        = string
-  description = "The Shared VPC network name."
-}
-
-variable "vpc_access_connector_name" {
-  type        = string
-  description = "The Shared VPC Access Connector to use."
-}
-
 variable "region" {
   type        = string
   description = "The default Google Cloud region for the created resources."
@@ -56,17 +41,6 @@ variable "restricted_kms_crypto_key" {
 variable "api_sa_email" {
   type        = string
   description = "The email of the API service account."
-}
-
-# TODO(Marcus): Learn more about subnetwork planning in shared VPC
-variable "api_subnetwork_name" {
-  type        = string
-  description = "The name of the Shared VPC subnetwork in which the API and it's connected resources will be attached to."
-}
-
-variable "api_database_allocated_ip_range" {
-  type        = string
-  description = "The API database allocated IP CIDR range."
 }
 
 variable "cloudbuild_apps_sa_email" {

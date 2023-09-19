@@ -29,18 +29,20 @@ module "monitoring" {
   monitoring_alerts_emails = local.monitoring_alerts_emails_list
 }
 
+module "network" {
+  source = "./modules/network"
+}
+
 module "api" {
   source = "./modules/api"
 
   org_id                          = var.org_id
   all_users_ingress_tag_value_id  = var.all_users_ingress_tag_value_id
-  shared_vpc_network_host         = var.shared_vpc_network_host
-  shared_vpc_network_name         = var.shared_vpc_network_name
-  vpc_access_connector_name       = var.vpc_access_connector_name
   region                          = var.region
   confidential_kms_crypto_key     = var.confidential_kms_crypto_key
   api_image                       = var.api_image
   api_sa_email                    = var.api_sa_email
-  api_subnetwork_name             = var.api_subnetwork_name
-  api_database_allocated_ip_range = var.api_database_allocated_ip_range
+  api_network_name                = module.network.network_name
+  api_database_allocated_ip_range = module.network.private_service_access_google_compute_global_address_name
+  vpc_access_connector_name       = module.network.vpc_access_connector_name
 }

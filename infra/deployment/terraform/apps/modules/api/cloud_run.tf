@@ -81,7 +81,7 @@ resource "google_cloud_run_v2_service" "api" {
 
     vpc_access {
       # TODO(Marcus): Figure out if I can or should use direct VPC egress. See https://cloud.google.com/run/docs/configuring/shared-vpc-direct-vpc.
-      connector = data.google_vpc_access_connector.shared_vpc_network.id
+      connector = data.google_vpc_access_connector.api.id
     }
   }
 

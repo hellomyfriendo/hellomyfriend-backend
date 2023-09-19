@@ -8,6 +8,7 @@ locals {
     "roles/monitoring.admin",
     "roles/secretmanager.admin",
     "roles/storage.admin",
+    "roles/vpcaccess.admin"
   ]
 }
 

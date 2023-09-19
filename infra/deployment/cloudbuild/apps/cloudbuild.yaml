@@ -24,9 +24,6 @@ steps:
       - "TFSTATE_BUCKET=${_TFSTATE_BUCKET}"
       - "TF_VAR_org_id=${_ORG_ID}"
       - "TF_VAR_all_users_ingress_tag_value_id=${_ALL_USERS_INGRESS_TAG_VALUE_ID}"
-      - "TF_VAR_shared_vpc_network_host=${_SHARED_VPC_NETWORK_HOST}"
-      - "TF_VAR_shared_vpc_network_name=${_SHARED_VPC_NETWORK_NAME}"
-      - "TF_VAR_vpc_access_connector_name=${_VPC_ACCESS_CONNECTOR_NAME}"
       - "TF_VAR_project_id=${PROJECT_ID}"
       - "TF_VAR_region=${_REGION}"
       - "TF_VAR_public_kms_crypto_key=${_PUBLIC_KMS_CRYPTO_KEY}"
@@ -35,8 +32,6 @@ steps:
       - "TF_VAR_restricted_kms_crypto_key=${_RESTRICTED_KMS_CRYPTO_KEY}"
       - "TF_VAR_api_image=${_API_IMAGE}"
       - "TF_VAR_api_sa_email=${_API_SA_EMAIL}"
-      - "TF_VAR_api_subnetwork_name=${_API_SUBNETWORK_NAME}"
-      - "TF_VAR_api_database_allocated_ip_range=${_API_DATABASE_ALLOCATED_IP_RANGE}"
       - "TF_VAR_monitoring_alerts_emails=${_MONITORING_ALERTS_EMAILS}"
 options:
   logging: CLOUD_LOGGING_ONLY
