@@ -32,13 +32,15 @@ module "monitoring" {
 module "api" {
   source = "./modules/api"
 
-  org_id                                = var.org_id
-  all_users_ingress_tag_value_id        = var.all_users_ingress_tag_value_id
-  shared_vpc_network_name               = var.shared_vpc_network_name
-  api_subnetwork_name                   = var.api_subnetwork_name
-  api_vpcaccess_connector_ip_cidr_range = var.api_vpcaccess_connector_ip_cidr_range
-  region                                = var.region
-  confidential_kms_crypto_key           = var.confidential_kms_crypto_key
-  api_image                             = var.api_image
-  api_sa_email                          = var.api_sa_email
+  org_id                          = var.org_id
+  all_users_ingress_tag_value_id  = var.all_users_ingress_tag_value_id
+  shared_vpc_network_host         = var.shared_vpc_network_host
+  shared_vpc_network_name         = var.shared_vpc_network_name
+  vpc_access_connector_id         = var.vpc_access_connector_id
+  region                          = var.region
+  confidential_kms_crypto_key     = var.confidential_kms_crypto_key
+  api_image                       = var.api_image
+  api_sa_email                    = var.api_sa_email
+  api_subnetwork_name             = var.api_subnetwork_name
+  api_database_allocated_ip_range = var.api_database_allocated_ip_range
 }

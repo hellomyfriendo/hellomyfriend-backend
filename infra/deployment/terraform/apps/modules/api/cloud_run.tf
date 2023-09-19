@@ -2,12 +2,6 @@
 #   name = var.api_image
 # }
 
-resource "google_vpc_access_connector" "connector" {
-  name          = "api-vpc-access-connector"
-  network       = var.api_subnetwork_name
-  ip_cidr_range = var.api_vpcaccess_connector_ip_cidr_range
-}
-
 # resource "google_cloud_run_v2_service" "api" {
 #   name     = "api"
 #   location = var.region
