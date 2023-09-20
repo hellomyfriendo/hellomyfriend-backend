@@ -23,20 +23,9 @@ module "vpc" {
   ]
 }
 
-module "private_service_access" {
-  source      = "GoogleCloudPlatform/sql-db/google//modules/private_service_access"
-  version     = "~> 13.0"
-  project_id  = data.google_project.project.project_id
-  vpc_network = module.vpc.network_name
-
-  depends_on = [
-    module.vpc
-  ]
-}
-
 # TODO(Marcus): Raise these values when I can pay for it.
 resource "google_vpc_access_connector" "connector" {
-  name           = "na-ne-1-vpc-access-conn-1"
+  name           = "na-ne-1-vpc-conn-1"
   machine_type   = "f1-micro"
   min_instances  = 2
   max_instances  = 3

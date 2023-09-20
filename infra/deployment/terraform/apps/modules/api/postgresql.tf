@@ -1,5 +1,5 @@
 locals {
-  database_name     = "api"
+  database_name     = "hellomyfriendo"
   database_port     = 5432
   database_username = "default"
 }
@@ -15,7 +15,6 @@ module "postgresql_database" {
   database_version     = "POSTGRES_15"
   db_name              = local.database_name
   enable_default_user  = true
-  encryption_key_name  = var.confidential_kms_crypto_key
   name                 = local.database_name
   project_id           = data.google_project.project.project_id
   random_instance_name = true
@@ -48,10 +47,6 @@ resource "google_secret_manager_secret" "database_password" {
     user_managed {
       replicas {
         location = var.region
-
-        customer_managed_encryption {
-          kms_key_name = var.confidential_kms_crypto_key
-        }
       }
     }
   }

@@ -23,10 +23,6 @@ resource "google_cloudbuild_trigger" "apps" {
     _ORG_ID                         = var.org_id
     _ALL_USERS_INGRESS_TAG_VALUE_ID = data.google_tags_tag_value.all_users_ingress.id
     _REGION                         = var.region
-    _PUBLIC_KMS_CRYPTO_KEY          = var.public_kms_crypto_key
-    _INTERNAL_KMS_CRYPTO_KEY        = var.internal_kms_crypto_key
-    _CONFIDENTIAL_KMS_CRYPTO_KEY    = var.confidential_kms_crypto_key
-    _RESTRICTED_KMS_CRYPTO_KEY      = var.restricted_kms_crypto_key
     _API_IMAGE                      = local.api_image
     _API_SA_EMAIL                   = var.api_sa_email
     _MONITORING_ALERTS_EMAILS       = join(",", var.monitoring_alerts_emails)

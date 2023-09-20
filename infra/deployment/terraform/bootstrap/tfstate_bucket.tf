@@ -7,15 +7,7 @@ resource "google_storage_bucket" "tfstate" {
 
   uniform_bucket_level_access = true
 
-  encryption {
-    default_kms_key_name = module.kms.confidential_kms_crypto_key
-  }
-
   versioning {
     enabled = true
   }
-
-  depends_on = [
-    module.iam
-  ]
 }

@@ -13,11 +13,6 @@ variable "region" {
   description = "The default Google Cloud region for the created resources."
 }
 
-variable "confidential_kms_crypto_key" {
-  type        = string
-  description = "The Confidential KMS crypto key."
-}
-
 variable "api_image" {
   type        = string
   description = "The name of the API Artifact Registry Docker image."

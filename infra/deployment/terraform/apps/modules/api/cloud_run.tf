@@ -10,7 +10,6 @@ resource "google_cloud_run_v2_service" "api" {
 
   template {
     service_account = var.api_sa_email
-    encryption_key  = var.confidential_kms_crypto_key
 
     containers {
       image = "${var.api_image}@${data.docker_registry_image.api.sha256_digest}"
@@ -87,7 +86,6 @@ resource "google_cloud_run_v2_service" "api" {
     vpc_access {
       # TODO(Marcus): Figure out if I can or should use direct VPC egress. See https://cloud.google.com/run/docs/configuring/shared-vpc-direct-vpc.
       connector = data.google_vpc_access_connector.api.id
-      egress    = "ALL_TRAFFIC"
     }
   }
 
@@ -104,6 +102,12 @@ resource "google_tags_location_tag_binding" "all_users_ingress_api" {
   location  = google_cloud_run_v2_service.api.location
 }
 
+resource "time_sleep" "wait_google_tags_location_tag_binding_all_users_ingress_api" {
+  depends_on = [google_tags_location_tag_binding.all_users_ingress_api]
+
+  create_duration = "30s"
+}
+
 resource "google_cloud_run_service_iam_member" "allow_unauthenticated" {
   location = google_cloud_run_v2_service.api.location
   project  = google_cloud_run_v2_service.api.project
@@ -112,6 +116,6 @@ resource "google_cloud_run_service_iam_member" "allow_unauthenticated" {
   member   = "allUsers"
 
   depends_on = [
-    google_tags_location_tag_binding.all_users_ingress_api
+    time_sleep.wait_google_tags_location_tag_binding_all_users_ingress_api
   ]
 }
