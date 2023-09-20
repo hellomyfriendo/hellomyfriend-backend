@@ -39,6 +39,7 @@ resource "google_compute_firewall" "allow_vpc_connector_ingress" {
   name        = "allow-vpc-connector-ingress"
   network     = module.vpc.network_name
   description = "Allows VPC Connector ingress. See https://cloud.google.com/vpc/docs/configure-serverless-vpc-access#restrict-access."
+  direction   = "INGRESS"
   priority    = 1000
 
   allow {
