@@ -452,7 +452,7 @@ EOF
   conditions {
     display_name = "Unauthorized User Activity"
     condition_matched_log {
-      filter = "protoPayload.status.code=7 AND NOT protoPayload.authenticationInfo.principalEmail=~\".*.gserviceaccount.com\" AND NOT protoPayload.serviceName=\"containeranalysis.googleapis.com\" AND NOT protoPayload.serviceName=\"cloudresourcemanager.googleapis.com\""
+      filter = "protoPayload.status.code=7 AND NOT protoPayload.authenticationInfo.principalEmail=~\".*.gserviceaccount.com\" AND NOT protoPayload.serviceName=\"containeranalysis.googleapis.com\" AND NOT protoPayload.serviceName=\"cloudresourcemanager.googleapis.com\" AND NOT protoPayload.serviceName=\"sourcerepo.googleapis.com\""
     }
   }
   alert_strategy {
