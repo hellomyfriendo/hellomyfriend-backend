@@ -102,10 +102,6 @@ resource "google_tags_location_tag_binding" "all_users_ingress_api" {
   parent    = "//run.googleapis.com/projects/${data.google_project.project.number}/locations/${google_cloud_run_v2_service.api.location}/services/${google_cloud_run_v2_service.api.name}"
   tag_value = var.all_users_ingress_tag_value_id
   location  = google_cloud_run_v2_service.api.location
-
-  depends_on = [
-    google_cloud_run_v2_service.api
-  ]
 }
 
 resource "google_cloud_run_service_iam_member" "allow_unauthenticated" {
