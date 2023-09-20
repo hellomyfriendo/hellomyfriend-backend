@@ -79,9 +79,15 @@ resource "google_cloud_run_v2_service" "api" {
       }
     }
 
+    # TODO(Marcus): Raise this when I can pay for it
+    scaling {
+      max_instance_count = 1
+    }
+
     vpc_access {
       # TODO(Marcus): Figure out if I can or should use direct VPC egress. See https://cloud.google.com/run/docs/configuring/shared-vpc-direct-vpc.
       connector = data.google_vpc_access_connector.api.id
+      egress    = "ALL_TRAFFIC"
     }
   }
 

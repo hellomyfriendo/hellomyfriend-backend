@@ -43,7 +43,6 @@ module "apps" {
   all_users_ingress_tag_key   = var.all_users_ingress_tag_key
   all_users_ingress_tag_value = var.all_users_ingress_tag_value
   region                      = var.region
-  cloudbuild_apps_sa_email    = module.iam.cloudbuild_apps_sa_email
   api_sa_email                = module.iam.api_sa_email
   public_kms_crypto_key       = module.kms.public_kms_crypto_key
   internal_kms_crypto_key     = module.kms.internal_kms_crypto_key

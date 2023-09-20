@@ -12,4 +12,8 @@ output "private_service_access_google_compute_global_address_name" {
 
 output "vpc_access_connector_name" {
   value = google_vpc_access_connector.connector.name
+
+  depends_on = [
+    google_vpc_access_connector.connector
+  ]
 }

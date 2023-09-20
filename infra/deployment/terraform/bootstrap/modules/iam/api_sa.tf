@@ -20,7 +20,7 @@ resource "google_project_iam_member" "api_sa" {
 resource "google_service_account_iam_member" "api_sa_cloudbuild_apps_sa" {
   service_account_id = google_service_account.api.name
   role               = "roles/iam.serviceAccountUser"
-  member             = "serviceAccount:${google_service_account.cloudbuild_apps.email}"
+  member             = "serviceAccount:${local.cloudbuild_sa_email}"
 }
 
 resource "google_service_account_iam_member" "api_sa_developers_group" {

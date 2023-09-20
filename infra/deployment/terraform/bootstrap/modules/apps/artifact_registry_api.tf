@@ -9,11 +9,3 @@ resource "google_artifact_registry_repository" "api" {
   format        = "DOCKER"
   kms_key_name  = var.confidential_kms_crypto_key
 }
-
-resource "google_artifact_registry_repository_iam_member" "api_cloudbuild_apps_sa" {
-  project    = google_artifact_registry_repository.api.project
-  location   = google_artifact_registry_repository.api.location
-  repository = google_artifact_registry_repository.api.name
-  role       = "roles/artifactregistry.writer"
-  member     = "serviceAccount:${var.cloudbuild_apps_sa_email}"
-}

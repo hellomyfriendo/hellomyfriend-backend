@@ -43,11 +43,6 @@ variable "api_sa_email" {
   description = "The email of the API service account."
 }
 
-variable "cloudbuild_apps_sa_email" {
-  type        = string
-  description = "The email of the Cloud Build apps service account."
-}
-
 variable "monitoring_alerts_emails" {
   type        = list(string)
   description = "Email addresses that will receive monitoring alerts."
