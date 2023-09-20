@@ -34,3 +34,27 @@ resource "google_vpc_access_connector" "connector" {
     name = module.vpc.subnets["northamerica-northeast1/na-ne-1-vpc-access-conn-1"].name
   }
 }
+
+resource "google_compute_firewall" "allow_vpc_connector_ingress" {
+  name        = "allow-vpc-connector-ingress"
+  network     = module.vpc.network_name
+  description = "Allows VPC Connector ingress. See https://cloud.google.com/vpc/docs/configure-serverless-vpc-access#restrict-access."
+  priority    = 1000
+
+  allow {
+    protocol = "tcp"
+  }
+
+  source_ranges = [
+    "35.199.224.0/19"
+  ]
+
+  target_tags = [
+    "vpc-connector"
+  ]
+
+  # TODO(Marcus): Possibly enable logging?
+  # log_config {
+  #   metadata = "INCLUDE_ALL_METADATA"
+  # }
+}
