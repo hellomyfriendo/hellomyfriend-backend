@@ -2,8 +2,10 @@ locals {
   cloudbuild_sa_email = "${data.google_project.project.number}@cloudbuild.gserviceaccount.com"
 
   cloudbuild_sa_roles = [
+    "roles/cloudbuild.builds.builder",
     "roles/cloudsql.admin",
     "roles/compute.admin",
+    "roles/compute.networkAdmin",
     "roles/logging.admin",
     "roles/monitoring.admin",
     "roles/secretmanager.admin",
