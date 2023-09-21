@@ -1,6 +1,4 @@
-import {Sql} from 'postgres';
-
-exports.up = async (client: Sql) => {
+exports.up = async client => {
   await client`
     CREATE EXTENSION IF NOT EXISTS postgis
   `;
@@ -85,7 +83,7 @@ exports.up = async (client: Sql) => {
   `;
 };
 
-exports.down = async (client: Sql) => {
+exports.down = async client => {
   await client`
     DROP TABLE IF EXISTS wants_images
   `;
