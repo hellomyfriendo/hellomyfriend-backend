@@ -104,7 +104,9 @@ resource "google_tags_location_tag_binding" "all_users_ingress_api" {
 }
 
 resource "time_sleep" "wait_google_tags_location_tag_binding_all_users_ingress_api" {
-  depends_on = [google_tags_location_tag_binding.all_users_ingress_api]
+  depends_on = [
+    google_tags_location_tag_binding.all_users_ingress_api
+  ]
 
   create_duration = "30s"
 }

@@ -24,9 +24,9 @@ module "postgresql_database" {
   zone                 = data.google_compute_zones.available.names[0]
 
   ip_configuration = {
-    authorized_networks                           = []
-    ipv4_enabled                                  = false
-    private_network                               = data.google_compute_network.api.id
+    authorized_networks = []
+    ipv4_enabled        = false
+    private_network     = data.google_compute_network.api.id
     # TODO(Marcus): should I require SSL here, even in a private network?
     require_ssl                                   = false
     allocated_ip_range                            = var.api_database_allocated_ip_range
