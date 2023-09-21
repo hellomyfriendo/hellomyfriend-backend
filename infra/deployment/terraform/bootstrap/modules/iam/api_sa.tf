@@ -1,6 +1,7 @@
 locals {
   api_sa_roles = [
     "roles/cloudsql.client",
+    "roles/firebase.sdkAdminServiceAgent",
     "roles/iam.serviceAccountTokenCreator"
   ]
 }

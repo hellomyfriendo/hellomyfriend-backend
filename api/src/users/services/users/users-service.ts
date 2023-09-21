@@ -1,4 +1,5 @@
 import {Auth} from 'firebase-admin/auth';
+import {FirebaseError} from '@firebase/util';
 import {User} from '../../models';
 
 interface UsersServiceSettings {
@@ -11,13 +12,23 @@ class UsersService {
   constructor(private readonly settings: UsersServiceSettings) {}
 
   async getUserById(userId: string): Promise<User | undefined> {
-    const user = await this.settings.auth.getUser(userId);
+    try {
+      const user = await this.settings.auth.getUser(userId);
 
-    return {
-      id: user.uid,
-      displayName: user.displayName,
-      photoURL: user.photoURL,
-    };
+      return {
+        id: user.uid,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+      };
+    } catch (err) {
+      if (err instanceof FirebaseError) {
+        if (err.code === 'auth/user-not-found') {
+          return;
+        }
+      }
+
+      throw err;
+    }
   }
 }
 

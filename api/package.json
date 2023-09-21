@@ -47,6 +47,7 @@
     "typescript": "~4.7.0"
   },
   "dependencies": {
+    "@firebase/util": "^1.9.3",
     "@google-cloud/language": "^6.0.0",
     "@google-cloud/storage": "^6.12.0",
     "@google-cloud/vision": "^4.0.1",
