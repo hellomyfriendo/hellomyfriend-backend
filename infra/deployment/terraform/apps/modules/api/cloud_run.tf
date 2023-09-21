@@ -14,17 +14,17 @@ resource "google_cloud_run_v2_service" "api" {
     containers {
       image = "${var.api_image}@${data.docker_registry_image.api.sha256_digest}"
 
-      # startup_probe {
-      #   http_get {
-      #     path = "/"
-      #   }
-      # }
+      startup_probe {
+        http_get {
+          path = "/"
+        }
+      }
 
-      # liveness_probe {
-      #   http_get {
-      #     path = "/"
-      #   }
-      # }
+      liveness_probe {
+        http_get {
+          path = "/"
+        }
+      }
 
       env {
         name = "GOOGLE_API_KEY"
