@@ -1,8 +1,8 @@
-import {Sql} from 'postgres';
+import {Auth} from 'firebase-admin/auth';
 import {User} from '../../models';
 
 interface UsersServiceSettings {
-  sql: Sql;
+  auth: Auth;
 }
 
 class UsersService {
@@ -11,15 +11,13 @@ class UsersService {
   constructor(private readonly settings: UsersServiceSettings) {}
 
   async getUserById(userId: string): Promise<User | undefined> {
-    const {sql} = this.settings;
+    const user = await this.settings.auth.getUser(userId);
 
-    const [user]: [User?] = await sql`
-      SELECT *
-      FROM ${sql(this.usersTable)}
-      WHERE id = ${userId}
-    `;
-
-    return user;
+    return {
+      id: user.uid,
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+    };
   }
 }
 

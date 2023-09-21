@@ -4,17 +4,10 @@ exports.up = async client => {
   `;
 
   await client`
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-    )
-  `;
-
-  await client`
     CREATE TABLE IF NOT EXISTS friend_requests (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      from_user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-      to_user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      from_user_id TEXT NOT NULL,
+      to_user_id TEXT NOT NULL,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
       deleted_at TIMESTAMP WITH TIME ZONE
     )
@@ -23,8 +16,8 @@ exports.up = async client => {
   await client`
     CREATE TABLE IF NOT EXISTS friends (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      user1_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-      user2_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      user1_id TEXT NOT NULL,
+      user2_id TEXT NOT NULL,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
       deleted_at TIMESTAMP WITH TIME ZONE
     )
@@ -33,7 +26,7 @@ exports.up = async client => {
   await client`
     CREATE TABLE IF NOT EXISTS wants (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      creator_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      creator_id TEXT NOT NULL,
       title TEXT NOT NULL,
       description TEXT,
       visibility TEXT NOT NULL,
@@ -52,7 +45,7 @@ exports.up = async client => {
     CREATE TABLE IF NOT EXISTS wants_members (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       want_id UUID REFERENCES wants(id) ON DELETE CASCADE,
-      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL,
       role TEXT NOT NULL,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
       deleted_at TIMESTAMP WITH TIME ZONE
@@ -63,7 +56,7 @@ exports.up = async client => {
     CREATE TABLE IF NOT EXISTS wants_visible_to(
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       want_id UUID REFERENCES wants(id) ON DELETE CASCADE,
-      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
       deleted_at TIMESTAMP WITH TIME ZONE
     )
@@ -106,9 +99,5 @@ exports.down = async client => {
 
   await client`
     DROP TABLE IF EXISTS friend_requests;
-  `;
-
-  await client`
-    DROP TABLE IF EXISTS users;
   `;
 };

@@ -57,7 +57,7 @@ const imageAnnotatorClient = new ImageAnnotatorClient({
 const googleMapsServicesClient = new Client({});
 
 const usersService = new UsersService({
-  sql,
+  auth: firebaseAdminAuth,
 });
 
 const friendsService = new FriendsService({
