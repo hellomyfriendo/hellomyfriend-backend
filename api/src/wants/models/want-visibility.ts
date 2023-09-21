@@ -1,11 +1,7 @@
-import {WantVisibleTo} from './want-visible-to';
-
-interface WantVisibility {
-  visibleTo: WantVisibleTo | string[];
-  location?: {
-    address: string;
-    radiusInMeters: number;
-  };
+enum WantVisibility {
+  Friends = 'friends',
+  Public = 'public',
+  Specific = 'specific',
 }
 
 export {WantVisibility};

@@ -1,96 +1,24 @@
-import {
-  FieldValue,
-  Firestore,
-  FirestoreDataConverter,
-} from '@google-cloud/firestore';
+import {Sql} from 'postgres';
 import {LanguageServiceClient} from '@google-cloud/language';
 import {Storage} from '@google-cloud/storage';
 import {ImageAnnotatorClient} from '@google-cloud/vision';
 import {Client, GeocodeResult} from '@googlemaps/google-maps-services-js';
 import dayjs from 'dayjs';
-import {geohashForLocation, distanceBetween} from 'geofire-common';
+import {distanceBetween} from 'geofire-common';
 import {orderBy} from 'lodash';
 import mime from 'mime-types';
 import {
   GeolocationCoordinates,
   Want,
+  WantMemberRole,
   WantVisibility,
-  WantVisibleTo,
 } from '../../models';
 import {NotFoundError} from '../../../errors';
 import {UsersService} from '../../../users';
 import {FriendsService} from '../../../friends';
 
-interface WantDocVisibility {
-  visibleTo: WantVisibleTo | string[];
-  location?: {
-    address: string;
-    radiusInMeters: number;
-    googlePlaceId: string;
-    geometry: {
-      coordinates: GeolocationCoordinates;
-      geohash: string;
-    };
-  };
-}
-
-interface WantDocImage {
-  gcs: {
-    bucket: string;
-    fileName: string;
-  };
-}
-
-interface WantDoc {
-  id: string;
-  creatorId: string;
-  adminsIds: string[];
-  membersIds: string[];
-  title: string;
-  description: string | null;
-  visibility: WantDocVisibility;
-  image: WantDocImage | null;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt: Date | null;
-}
-
-const wantDocConverter: FirestoreDataConverter<WantDoc> = {
-  toFirestore: function (
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    modelObject: FirebaseFirestore.WithFieldValue<WantDoc>
-  ): FirebaseFirestore.DocumentData {
-    throw new Error('Function not implemented.');
-  },
-
-  fromFirestore: function (
-    snapshot: FirebaseFirestore.QueryDocumentSnapshot<FirebaseFirestore.DocumentData>
-  ): WantDoc {
-    const data = snapshot.data();
-
-    return {
-      id: snapshot.id,
-      creatorId: data.creatorId,
-      adminsIds: data.adminsIds,
-      membersIds: data.membersIds,
-      title: data.title,
-      description: data.description,
-      visibility: data.visibility,
-      image: data.image,
-      createdAt: data.createdAt.toDate(),
-      updatedAt: data.updatedAt.toDate(),
-      deletedAt: data.deletedAt?.toDate(),
-    };
-  },
-};
-
 interface WantsServiceSettings {
-  firestore: {
-    client: Firestore;
-    collections: {
-      wants: string;
-    };
-  };
+  sql: Sql;
   language: {
     client: LanguageServiceClient;
   };
@@ -109,24 +37,78 @@ interface WantsServiceSettings {
   usersService: UsersService;
 }
 
-interface CreateWantOptions {
-  creator: string;
+interface WantRow {
+  id: string;
+  creatorId: string;
   title: string;
   description?: string;
   visibility: WantVisibility;
+  address: string;
+  latitude: number;
+  longitude: number;
+  googlePlaceId: string;
+  radiusInMeters: number;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date;
 }
 
-interface GetHomeWantsFeedOptions {
+interface WantMemberRow {
+  id: string;
+  wantId: string;
   userId: string;
-  geolocationCoordinates?: GeolocationCoordinates;
+  role: WantMemberRole;
+  createdAt: Date;
+  deletedAt?: Date;
+}
+
+interface WantVisibleToRow {
+  id: string;
+  wantId: string;
+  userId: string;
+  createdAt: Date;
+  deletedAt?: Date;
+}
+
+interface WantImageRow {
+  id: string;
+  wantId: string;
+  googleStorageBucket: string;
+  googleStorageFile: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface CreateWantOptions {
+  creatorId: string;
+  title: string;
+  description?: string;
+  visibility: WantVisibility;
+  visibleTo?: string[];
+  address: string;
+  radiusInMeters: number;
+}
+
+interface ListWantsOptions {
+  userId?: string;
+  orderBy?: {
+    column: 'createdAt';
+    direction: 'asc' | 'desc';
+  }[];
+}
+
+interface ListHomeFeedOptions {
+  userId: string;
+  geolocationCoordinates: GeolocationCoordinates;
 }
 
 interface UpdateWantOptions {
-  adminsIds?: string[];
+  administratorsIds?: string[];
   membersIds?: string[];
   title?: string;
   description?: string;
   visibility?: WantVisibility;
+  visibleTo?: string[];
   image?: {
     data: Buffer;
     mimeType: string;
@@ -134,392 +116,511 @@ interface UpdateWantOptions {
 }
 
 class WantsService {
+  private readonly wantsTable = 'wants';
+  private readonly wantsMembersTable = 'wants_members';
+  private readonly wantsVisibleToTable = 'wants_visible_to';
+  private readonly wantsImagesTable = 'wants_images';
+
   constructor(private readonly settings: WantsServiceSettings) {}
 
   async createWant(options: CreateWantOptions): Promise<Want> {
     const creator = await this.settings.usersService.getUserById(
-      options.creator
+      options.creatorId
     );
 
     if (!creator) {
-      throw new NotFoundError(`Creator id ${options.creator} not found`);
+      throw new NotFoundError(`User ${options.creatorId} not found`);
     }
 
     await this.validateWantTitle(options.title);
 
     if (options.description) {
-      await this.validateWantTitle(options.description);
+      await this.validateWantDescription(options.description);
     }
 
-    const wantDocVisibility = await this.getWantDocVisibility(
-      options.visibility
-    );
+    const visibleTo: string[] = [];
+    if (options.visibility === WantVisibility.Specific) {
+      if (!options.visibleTo) {
+        throw new RangeError(
+          `options.visibleTo must be defined when options.visibility is ${options.visibility}`
+        );
+      }
 
-    const wantDocRef = await this.settings.firestore.client
-      .collection(this.settings.firestore.collections.wants)
-      .add({
-        creatorId: creator.id,
-        adminsIds: [creator.id],
-        membersIds: [],
-        title: options.title,
-        description: options.description,
-        visibility: wantDocVisibility,
-        image: null,
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-        deletedAt: null,
-      });
+      for (const userId of options.visibleTo) {
+        const user = await this.settings.usersService.getUserById(userId);
 
-    const want = await this.getWantById(wantDocRef.id);
+        if (!user) {
+          throw new NotFoundError(`User ${userId} not found`);
+        }
+
+        visibleTo.push(userId);
+      }
+    }
+
+    const geocodeResult = await this.geocodeAddress(options.address);
+
+    if (!Number.isInteger(options.radiusInMeters)) {
+      throw new RangeError('options.radiusInMeters must be an integer');
+    }
+
+    const {sql} = this.settings;
+
+    const [wantId] = await sql.begin(async sql => {
+      const [{id: wantId}]: [{id: string}] = await sql`
+        INSERT INTO ${sql(this.wantsTable)}(
+          creator_id,
+          title,
+          description,
+          visibility,
+          address,
+          latitude,
+          longitude,
+          ${sql('googlePlaceId')},
+          ${sql('radiusInMeters')}
+        )
+        VALUES(
+          ${creator.id},
+          ${options.title},
+          ${options.description ? options.description : null},
+          ${options.visibility},
+          ${geocodeResult.formatted_address},
+          ${geocodeResult.geometry.location.lat},
+          ${geocodeResult.geometry.location.lng},
+          ${geocodeResult.place_id},
+          ${options.radiusInMeters}
+        )
+        RETURNING id
+      `;
+
+      await sql`
+          INSERT INTO ${sql(this.wantsMembersTable)}(
+            ${sql('wantId')},
+            ${sql('userId')},
+            role
+          )
+          VALUES(
+            ${wantId},
+            ${creator.id},
+            ${WantMemberRole.Administrator}
+          )
+        `;
+
+      if (visibleTo.length > 0) {
+        await sql`
+          INSERT INTO ${sql(this.wantsVisibleToTable)} ${sql(
+          visibleTo.map(userId => {
+            return {
+              wantId,
+              userId,
+            };
+          })
+        )}
+        `;
+      }
+
+      return [wantId];
+    });
+
+    const want = await this.getWantById(wantId);
 
     if (!want) {
-      throw new Error(
-        `Want ${wantDocRef.id} not found. This should never happen.`
-      );
+      throw new Error(`Want ${wantId} not found. This should not happen`);
     }
 
     return want;
   }
 
   async getWantById(wantId: string): Promise<Want | undefined> {
-    const wantDocSnapshot = await this.settings.firestore.client
-      .doc(`${this.settings.firestore.collections.wants}/${wantId}`)
-      .withConverter(wantDocConverter)
-      .get();
+    const {sql} = this.settings;
 
-    const wantDocData = wantDocSnapshot.data();
+    const [wantRow]: [WantRow?] = await sql`
+      SELECT *
+      FROM ${sql(this.wantsTable)}
+      WHERE ${sql('deletedAt')} IS NULL
+      AND id = ${wantId}
+    `;
 
-    if (!wantDocData) {
-      return;
+    if (!wantRow) {
+      throw new NotFoundError(`Want ${wantId} not found`);
     }
 
-    if (wantDocData.deletedAt) {
-      return;
-    }
+    const members: WantMemberRow[] = await sql`
+      SELECT ${sql('userId')}, role
+      FROM ${sql(this.wantsMembersTable)}
+      WHERE ${sql('deletedAt')} IS NULL
+      AND ${sql('wantId')} = ${wantId}
+    `;
 
-    return this.toWant(wantDocData);
+    const visibleTo: WantVisibleToRow[] = await sql`
+      SELECT ${sql('userId')}
+      FROM ${sql(this.wantsVisibleToTable)}
+      WHERE ${sql('deletedAt')} IS NULL
+      AND ${sql('wantId')} = ${wantId}
+    `;
+
+    const imageURL = await this.getWantImageURL(wantId);
+
+    const want: Want = {
+      id: wantId,
+      creatorId: wantRow.creatorId,
+      administratorsIds: members
+        .filter(member => member.role === WantMemberRole.Administrator)
+        .map(member => member.userId),
+      membersIds: members
+        .filter(member => member.role === WantMemberRole.Member)
+        .map(member => member.userId),
+      title: wantRow.title,
+      description: wantRow.description,
+      imageURL,
+      visibility: wantRow.visibility,
+      visibleTo: visibleTo.map(visibleTo => visibleTo.userId),
+      address: wantRow.address,
+      coordinates: {
+        latitude: wantRow.latitude,
+        longitude: wantRow.longitude,
+      },
+      radiusInMeters: wantRow.radiusInMeters,
+      createdAt: wantRow.createdAt,
+      updatedAt: wantRow.updatedAt,
+    };
+
+    return want;
   }
 
-  async updateWantById(
-    wantId: string,
-    updateWantOptions: UpdateWantOptions
-  ): Promise<Want> {
-    const wantDocRef = this.settings.firestore.client.doc(
-      `${this.settings.firestore.collections.wants}/${wantId}`
+  async listWants(options: ListWantsOptions): Promise<Want[]> {
+    const {sql} = this.settings;
+
+    const wantsIdsRows: {id: string}[] = await sql`
+      SELECT w.id
+      FROM ${sql(this.wantsTable)} w
+      ${
+        options.userId
+          ? sql`JOIN ${sql(this.wantsMembersTable)} wm ON w.${sql(
+              'id'
+            )} = wm.${sql('wantId')}`
+          : sql``
+      }
+      WHERE w.${sql('deletedAt')} IS NULL
+      ${
+        options.userId
+          ? sql`AND wm.${sql('userId')} = ${options.userId} AND wm.${sql(
+              'deletedAt'
+            )} IS NULL`
+          : sql``
+      }
+      ${
+        options.orderBy
+          ? sql`ORDER BY ${options.orderBy.map((x, i) => {
+              return `${i ? sql`,` : sql``} ${sql(x.column)} ${
+                x.direction === 'asc' ? sql`ASC` : sql`DESC`
+              }`;
+            })}`
+          : sql``
+      }
+    `;
+
+    return await Promise.all(
+      wantsIdsRows.map(async wantRow => {
+        const want = await this.getWantById(wantRow.id);
+
+        if (!want) {
+          throw new Error(
+            `Want ${wantRow.id} not found. This should not happen`
+          );
+        }
+
+        return want;
+      })
     );
-
-    const wantDocSnapshot = await wantDocRef.get();
-
-    const wantData = wantDocSnapshot.data();
-
-    if (!wantData) {
-      throw new NotFoundError(`Want ${wantId} not found`);
-    }
-
-    if (wantData.deletedAt) {
-      throw new NotFoundError(`Want ${wantId} not found`);
-    }
-
-    if (!Object.values(updateWantOptions).some(option => option)) {
-      return (await this.getWantById(wantId))!;
-    }
-
-    await this.settings.firestore.client.runTransaction(async t => {
-      if (updateWantOptions.adminsIds) {
-        await this.validateWantAdminsIds(updateWantOptions.adminsIds);
-
-        wantData.adminsIds = updateWantOptions.adminsIds;
-      }
-
-      if (updateWantOptions.membersIds) {
-        await this.validateWantMembersIds(updateWantOptions.membersIds);
-
-        wantData.membersIds = updateWantOptions.membersIds;
-      }
-
-      if (updateWantOptions.title) {
-        await this.validateWantTitle(updateWantOptions.title);
-
-        wantData.title = updateWantOptions.title;
-      }
-
-      if (updateWantOptions.description) {
-        await this.validateWantDescription(updateWantOptions.description);
-
-        wantData.description = updateWantOptions.description;
-      }
-
-      if (updateWantOptions.visibility) {
-        wantData.visibility = await this.getWantDocVisibility(
-          updateWantOptions.visibility
-        );
-      }
-
-      if (updateWantOptions.image) {
-        const wantDocImage = await this.uploadWantImage(
-          wantId,
-          updateWantOptions.image
-        );
-
-        wantData.image = wantDocImage;
-      }
-
-      t.update(wantDocRef, {
-        ...wantData,
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-    });
-
-    return (await this.getWantById(wantId))!;
   }
 
-  async getHomeWantsFeed(options: GetHomeWantsFeedOptions): Promise<Want[]> {
-    // TODO(Marcus): iterate and optimize this, performance and user experience wise.
-
-    const listFriendsWantsDocs = async (userId: string) => {
-      const userFriends =
-        await this.settings.friendsService.listFriendsByUserId(userId);
-
-      if (userFriends.length === 0) {
-        return [];
-      }
-
-      const wantsDocsSnapshots = await this.settings.firestore.client
-        .collection(this.settings.firestore.collections.wants)
-        .withConverter(wantDocConverter)
-        .where('deletedAt', '==', null)
-        .where('creatorId', 'in', userFriends)
-        .where('visibility.visibleTo', '==', 'friends')
-        .get();
-
-      return wantsDocsSnapshots.docs.map(wantSnapshot => wantSnapshot.data());
-    };
-
-    const listUserTargetedWantsDocs = async (userId: string) => {
-      const wantsSnapshot = await this.settings.firestore.client
-        .collection(this.settings.firestore.collections.wants)
-        .withConverter(wantDocConverter)
-        .where('deletedAt', '==', null)
-        .where('visibility.visibleTo', 'array-contains', userId)
-        .get();
-
-      return wantsSnapshot.docs.map(wantSnapshot => wantSnapshot.data());
-    };
-
-    const listPublicWantsDocs = async () => {
-      const wantsSnapshot = await this.settings.firestore.client
-        .collection(this.settings.firestore.collections.wants)
-        .withConverter(wantDocConverter)
-        .where('deletedAt', '==', null)
-        .where('visibility.visibleTo', '==', 'public')
-        .get();
-
-      return wantsSnapshot.docs.map(wantSnapshot => wantSnapshot.data());
-    };
-
-    interface CalculateFeedScoreOptions {
-      wantDoc: WantDoc;
-      userGeolocationCoordinates?: GeolocationCoordinates;
+  async listHomeFeed(options: ListHomeFeedOptions): Promise<Want[]> {
+    interface Row {
+      id: string;
+      visibility: WantVisibility;
+      latitude: number;
+      longitude: number;
     }
 
-    // TODO(Marcus): This could be an interesting place to use machine learning. Maybe have it receive the userId too so the feed can be tailored.
-    const calculateFeedScore = (options: CalculateFeedScoreOptions): number => {
-      const calculateVisibilityScore = (wantDoc: WantDoc): number => {
-        switch (wantDoc.visibility.visibleTo) {
-          case WantVisibleTo.Friends:
-            return -0.2;
-          case WantVisibleTo.Public:
-            return -0.15;
-          default:
-            return -0.25;
-        }
-      };
+    const calculateScore = (options: ListHomeFeedOptions, row: Row): number => {
+      let score = 0;
 
-      const calculateCreatedAtScore = (want: WantDoc): number => {
-        const today = dayjs();
-        const createdAtDate = dayjs(want.createdAt);
+      switch (row.visibility) {
+        case WantVisibility.Friends:
+          score += 2;
+          break;
+        case WantVisibility.Specific:
+          score += 1;
+          break;
+      }
 
-        switch (today.diff(createdAtDate, 'day')) {
-          case 0:
-          case 1:
-            return -0.25;
-          case 2:
-          case 3:
-            return -0.2;
-          default:
-            return -0.15;
-        }
-      };
+      const wantDistanceInKm = distanceBetween(
+        [
+          options.geolocationCoordinates.latitude,
+          options.geolocationCoordinates.longitude,
+        ],
+        [row.latitude, row.longitude]
+      );
 
-      const calculateMembersCountScore = (want: WantDoc): number => {
-        const membersCount = want.membersIds.length;
-
-        if (membersCount > 4) {
-          return -0.25;
-        } else if (membersCount > 2) {
-          return -0.2;
-        } else {
-          return -0.15;
-        }
-      };
-
-      const calculateLocationScore = (
-        wantDoc: WantDoc,
-        userGeolocationCoordinates?: GeolocationCoordinates
-      ): number => {
-        if (!wantDoc.visibility.location) {
-          return 0;
-        }
-
-        if (!userGeolocationCoordinates) {
-          return 0;
-        }
-
-        const distanceInKm = distanceBetween(
-          [
-            wantDoc.visibility.location.geometry.coordinates.latitude,
-            wantDoc.visibility.location.geometry.coordinates.longitude,
-          ],
-          [
-            userGeolocationCoordinates.latitude,
-            userGeolocationCoordinates.longitude,
-          ]
-        );
-
-        if (distanceInKm < 4) {
-          return -0.25;
-        } else if (distanceInKm < 8) {
-          return -0.2;
-        } else {
-          return -0.15;
-        }
-      };
-
-      const score =
-        calculateVisibilityScore(options.wantDoc) +
-        calculateCreatedAtScore(options.wantDoc) +
-        calculateMembersCountScore(options.wantDoc) +
-        calculateLocationScore(
-          options.wantDoc,
-          options.userGeolocationCoordinates
-        );
+      if (wantDistanceInKm < 2) {
+        score += 2;
+      } else if (wantDistanceInKm < 15) {
+        score += 1;
+      }
 
       return score;
     };
 
-    const user = await this.settings.usersService.getUserById(options.userId);
+    const {sql, friendsService, usersService} = this.settings;
+
+    const user = await usersService.getUserById(options.userId);
 
     if (!user) {
       throw new NotFoundError(`User ${options.userId} not found`);
     }
 
-    const [userFriendsWantDocs, userTargetedWantDocs, publicWantDocs] =
-      await Promise.all([
-        listFriendsWantsDocs(user.id),
-        listUserTargetedWantsDocs(user.id),
-        listPublicWantsDocs(),
-      ]);
+    const userFriendships = await friendsService.listFriendships({
+      userId: user.id,
+    });
 
-    const relevantWantDocs = [
-      ...userFriendsWantDocs,
-      ...userTargetedWantDocs,
-      ...publicWantDocs,
+    const userFriendsIds = userFriendships.map(friendship => {
+      if (friendship.user2Id !== user.id) {
+        return friendship.user2Id;
+      }
+      return friendship.user1Id;
+    });
+
+    const publicWantsRows: Row[] = await sql`
+      SELECT 
+        id,
+        visibility, 
+        latitude,
+        longitude
+      FROM ${sql(this.wantsTable)}
+      WHERE ${sql('deletedAt')} IS NULL
+      AND visibility = ${WantVisibility.Public}
+      AND ST_DWithin(ST_MakePoint(longitude, latitude)::geography, ST_MakePoint(${
+        options.geolocationCoordinates.longitude
+      }, ${options.geolocationCoordinates.latitude})::geography, ${sql(
+      'radiusInMeters'
+    )})
+    `;
+
+    console.log('publicWantsRows', publicWantsRows);
+
+    const friendsWantsRows: Row[] = await sql`
+      SELECT 
+        id,
+        visibility, 
+        latitude,
+        longitude
+      FROM ${sql(this.wantsTable)}
+      WHERE ${sql('deletedAt')} IS NULL
+      AND visibility = ${WantVisibility.Friends}
+      AND ${sql('creatorId')} IN ${sql(userFriendsIds)}
+      AND ST_DWithin(ST_MakePoint(longitude, latitude)::geography, ST_MakePoint(${
+        options.geolocationCoordinates.longitude
+      }, ${options.geolocationCoordinates.latitude})::geography, ${sql(
+      'radiusInMeters'
+    )})
+    `;
+
+    console.log('friendsWantsRows', friendsWantsRows);
+
+    const visibleToWantsRows: Row[] = await sql`
+      SELECT 
+        w.id,
+        w.visibility, 
+        w.latitude,
+        w.longitude
+      FROM ${sql(this.wantsTable)} w
+      JOIN ${sql(this.wantsVisibleToTable)} wv ON w.id = wv.${sql('wantId')}
+      WHERE w.${sql('deletedAt')} IS NULL
+      AND w.visibility = ${WantVisibility.Specific}
+      AND ST_DWithin(ST_MakePoint(longitude, latitude)::geography, ST_MakePoint(${
+        options.geolocationCoordinates.longitude
+      }, ${options.geolocationCoordinates.latitude})::geography, ${sql(
+      'radiusInMeters'
+    )})
+      AND wv.${sql('deletedAt')} IS NULL
+      AND wv.${sql('userId')} = ${user.id}
+    `;
+
+    console.log('visibleToWantsRows', visibleToWantsRows);
+
+    const rows = [
+      ...publicWantsRows,
+      ...friendsWantsRows,
+      ...visibleToWantsRows,
     ];
 
-    const orderedRelevantWantDocs = orderBy(relevantWantDocs, wantDoc =>
-      calculateFeedScore({
-        wantDoc,
-        userGeolocationCoordinates: options.geolocationCoordinates,
-      })
+    const orderedRows = orderBy(
+      rows,
+      row => calculateScore(options, row),
+      'desc'
     );
 
     return await Promise.all(
-      orderedRelevantWantDocs.map(async wantDoc => {
-        return await this.toWant(wantDoc);
+      orderedRows.map(async row => {
+        const want = await this.getWantById(row.id);
+
+        if (!want) {
+          throw new Error(`Want ${row.id} not found. This should not happen`);
+        }
+
+        return want;
       })
     );
   }
 
-  private async toWant(wantDoc: WantDoc): Promise<Want> {
-    const want: Want = {
-      id: wantDoc.id,
-      creatorId: wantDoc.creatorId,
-      adminsIds: wantDoc.adminsIds,
-      membersIds: wantDoc.membersIds,
-      title: wantDoc.title,
-      description: wantDoc.description,
-      visibility: {
-        visibleTo: wantDoc.visibility.visibleTo,
-      },
-      image: null,
-      createdAt: wantDoc.createdAt,
-      updatedAt: wantDoc.updatedAt,
-    };
+  async updateWantById(
+    wantId: string,
+    options: UpdateWantOptions
+  ): Promise<Want> {
+    const want = await this.getWantById(wantId);
 
-    if (wantDoc.visibility.location) {
-      want.visibility.location = {
-        address: wantDoc.visibility.location.address,
-        radiusInMeters: wantDoc.visibility.location.radiusInMeters,
-      };
+    if (!want) {
+      throw new NotFoundError(`Want ${wantId} not found`);
     }
 
-    if (wantDoc.image) {
-      const [signedUrl] = await this.settings.storage.client
-        .bucket(wantDoc.image.gcs.bucket)
-        .file(wantDoc.image.gcs.fileName)
-        .getSignedUrl({
-          action: 'read',
-          expires: dayjs().add(1, 'hour').toDate(),
-        });
-
-      want.image = {
-        url: signedUrl,
-      };
+    if (options.administratorsIds) {
+      await this.validateWantAdministratorsIds(options.administratorsIds);
     }
 
-    return want;
+    if (options.membersIds) {
+      await this.validateWantMembersIds(options.membersIds);
+    }
+
+    if (options.title) {
+      await this.validateWantTitle(options.title);
+    }
+
+    if (options.description) {
+      await this.validateWantDescription(options.description);
+    }
+
+    if (options.visibility === WantVisibility.Specific) {
+      if (!options.visibleTo) {
+        throw new RangeError(
+          `options.visibleTo must be defined when options.visibility is ${options.visibility}`
+        );
+      }
+
+      await this.validateWantVisibleTo(options.visibleTo);
+    }
+
+    if (options.image) {
+      await this.validateWantImage(options.image.data);
+      await this.uploadWantImage(want.id, {
+        data: options.image.data,
+        mimeType: options.image.mimeType,
+      });
+    }
+
+    const {sql} = this.settings;
+
+    await sql.begin(async sql => {
+      if (options.administratorsIds) {
+        await sql`
+          UPDATE ${this.wantsMembersTable} 
+          SET role = ${WantMemberRole.Administrator}
+          WHERE ${sql('wantId')} = ${want.id}
+          AND ${sql('userId')} IN ${options.administratorsIds}
+        `;
+      }
+
+      if (options.membersIds) {
+        await sql`
+          UPDATE ${this.wantsMembersTable} 
+          SET role = ${WantMemberRole.Member}
+          WHERE ${sql('wantId')} = ${want.id}
+          AND ${sql('userId')} IN ${options.membersIds}
+        `;
+      }
+
+      const wantUpdate = {
+        title: options.title || want.title,
+        description: options.description || want.description,
+        visibility: options.visibility || want.visibility,
+      };
+
+      await sql`
+        UPDATE ${sql(this.wantsTable)}
+        SET 
+          title = ${wantUpdate.title}
+          ${
+            wantUpdate.description
+              ? sql`, description = ${wantUpdate.description}`
+              : sql``
+          }
+          , visibility = ${wantUpdate.visibility}
+          , ${sql('updatedAt')} = now()
+        WHERE id = ${want.id}
+      `;
+
+      if (options.visibility === WantVisibility.Specific && options.visibleTo) {
+        await sql`
+          UPDATE ${sql(this.wantsVisibleToTable)}
+          SET ${sql('deletedAt')} = now()
+          WHERE ${sql('wantId')} = ${want.id}
+        `;
+
+        await sql`
+          INSERT INTO ${sql(this.wantsVisibleToTable)} ${sql(
+          options.visibleTo.map(userId => {
+            return {
+              wantId: want.id,
+              userId,
+            };
+          })
+        )}
+        `;
+      }
+    });
+
+    const updatedWant = await this.getWantById(wantId);
+
+    if (!updatedWant) {
+      throw new Error(
+        `Updated Want ${wantId} not found. This should not happen`
+      );
+    }
+
+    return updatedWant;
   }
 
-  private async getWantDocVisibility(
-    visibility: WantVisibility
-  ): Promise<WantDocVisibility> {
-    let wantDocVisibility: WantDocVisibility = {
-      visibleTo: visibility.visibleTo,
-    };
+  private async getWantImageURL(wantId: string): Promise<string | undefined> {
+    const {sql, storage} = this.settings;
 
-    if (visibility.location) {
-      const geocodedAddress = await this.geocodeAddress(
-        visibility.location.address
-      );
-
-      wantDocVisibility = {
-        ...wantDocVisibility,
-        location: {
-          address: visibility.location.address,
-          radiusInMeters: visibility.location.radiusInMeters,
-          googlePlaceId: geocodedAddress.place_id,
-          geometry: {
-            coordinates: {
-              latitude: geocodedAddress.geometry.location.lat,
-              longitude: geocodedAddress.geometry.location.lng,
-            },
-            geohash: geohashForLocation([
-              geocodedAddress.geometry.location.lat,
-              geocodedAddress.geometry.location.lng,
-            ]),
-          },
-        },
-      };
+    const [row]: [WantImageRow?] = await sql`
+      SELECT 
+        ${sql('googleStorageBucket')},
+        ${sql('googleStorageFile')}
+      FROM ${sql(this.wantsImagesTable)}
+      WHERE ${sql('wantId')} = ${wantId}
+    `;
+    if (!row) {
+      return;
     }
 
-    return wantDocVisibility;
+    const expires = dayjs().add(1, 'hour').toDate();
+
+    const [imageURL] = await storage.client
+      .bucket(row.googleStorageBucket)
+      .file(row.googleStorageFile)
+      .getSignedUrl({
+        action: 'read',
+        expires,
+      });
+
+    return imageURL;
   }
 
   private async uploadWantImage(
     wantId: string,
     // TODO(Marcus): Check mimeType from Buffer? Could use https://github.com/sindresorhus/file-type but converting this project to ESM seems a bit of a hassle at this point.
     image: {data: Buffer; mimeType: string}
-  ): Promise<WantDocImage> {
+  ): Promise<{storage: {bucket: string; fileName: string}}> {
     const want = await this.getWantById(wantId);
 
     if (!want) {
@@ -545,22 +646,39 @@ class WantsService {
 
     await this.validateWantImage(image.data);
 
+    const {sql, storage} = this.settings;
+
     const fileName = `images/${wantId}.${mime.extension(image.mimeType)}`;
 
-    const gcsFile = this.settings.storage.client
-      .bucket(this.settings.storage.buckets.wantsAssets)
+    const gcsFile = storage.client
+      .bucket(storage.buckets.wantsAssets)
       .file(fileName);
 
     await gcsFile.save(image.data);
 
-    const wantDocImage: WantDocImage = {
-      gcs: {
-        bucket: this.settings.storage.buckets.wantsAssets,
-        fileName,
+    await sql`
+      INSERT INTO ${sql(this.wantsImagesTable)}(
+        ${sql('wantId')},
+        ${sql('googleStorageBucket')},
+        ${sql('googleStorageFile')}
+      ) VALUES(
+        ${want.id},
+        ${gcsFile.bucket.name},
+        ${gcsFile.name}
+      )
+      ON CONFLICT(${sql('wantId')}) DO UPDATE
+      SET
+        ${sql('googleStorageBucket')} = ${gcsFile.bucket.name},
+        ${sql('googleStorageFile')} = ${gcsFile.name},
+        ${sql('updatedAt')} = now()
+    `;
+
+    return {
+      storage: {
+        bucket: gcsFile.bucket.name,
+        fileName: gcsFile.name,
       },
     };
-
-    return wantDocImage;
   }
 
   private async geocodeAddress(address: string): Promise<GeocodeResult> {
@@ -657,22 +775,22 @@ class WantsService {
     return;
   }
 
-  private async validateWantAdminsIds(adminsIds: string[]) {
-    for (const adminId of adminsIds) {
-      const adminUser = await this.settings.usersService.getUserById(adminId);
+  private async validateWantAdministratorsIds(adminsIds: string[]) {
+    for (const userId of adminsIds) {
+      const user = await this.settings.usersService.getUserById(userId);
 
-      if (!adminUser) {
-        throw new NotFoundError(`User ${adminId} not found`);
+      if (!user) {
+        throw new NotFoundError(`User ${userId} not found`);
       }
     }
   }
 
   private async validateWantMembersIds(membersIds: string[]) {
-    for (const memberId of membersIds) {
-      const memberUser = await this.settings.usersService.getUserById(memberId);
+    for (const userId of membersIds) {
+      const user = await this.settings.usersService.getUserById(userId);
 
-      if (!memberUser) {
-        throw new NotFoundError(`User ${memberId} not found`);
+      if (!user) {
+        throw new NotFoundError(`User ${userId} not found`);
       }
     }
   }
@@ -696,6 +814,16 @@ class WantsService {
       throw new RangeError(
         `${explicitContentCategory} detected in description: ${text}. Explicit content is not allowed.`
       );
+    }
+  }
+
+  private async validateWantVisibleTo(visibleToUserIds: string[]) {
+    for (const userId of visibleToUserIds) {
+      const user = await this.settings.usersService.getUserById(userId);
+
+      if (!user) {
+        throw new NotFoundError(`User ${userId} not found`);
+      }
     }
   }
 

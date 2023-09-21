@@ -5,10 +5,6 @@ resource "google_secret_manager_secret" "terraform_tfvars" {
     user_managed {
       replicas {
         location = var.region
-
-        customer_managed_encryption {
-          kms_key_name = module.kms.confidential_kms_crypto_key
-        }
       }
     }
   }

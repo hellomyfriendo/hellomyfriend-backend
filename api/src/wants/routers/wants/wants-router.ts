@@ -2,7 +2,7 @@ import * as express from 'express';
 import {celebrate, Joi, Segments} from 'celebrate';
 import {StatusCodes} from 'http-status-codes';
 import {WantsService} from '../../services';
-import {GeolocationCoordinates, WantVisibleTo} from '../../models';
+import {GeolocationCoordinates, WantVisibility} from '../../models';
 import {UnauthorizedError} from '../../../errors/unauthorized-error';
 import {ForbiddenError, NotFoundError} from '../../../errors';
 
@@ -23,18 +23,12 @@ class WantsRouter {
           .keys({
             title: Joi.string().required(),
             description: Joi.string(),
-            visibility: Joi.object().keys({
-              visibleTo: Joi.alternatives()
-                .try(
-                  Joi.string().valid(...Object.values(WantVisibleTo)),
-                  Joi.array().items(Joi.string())
-                )
-                .required(),
-              location: Joi.object().keys({
-                address: Joi.string().required(),
-                radiusInMeters: Joi.number().required(),
-              }),
-            }),
+            visibility: Joi.string()
+              .valid(...Object.values(WantVisibility))
+              .required(),
+            visibleTo: Joi.array().items(Joi.string()),
+            address: Joi.string().required(),
+            radiusInMeters: Joi.number().integer().required(),
           })
           .required(),
       }),
@@ -48,13 +42,23 @@ class WantsRouter {
             throw new UnauthorizedError('User not found in req');
           }
 
-          const {title, description, visibility} = req.body;
-
-          const want = await this.settings.wantsService.createWant({
-            creator: userId,
+          const {
             title,
             description,
             visibility,
+            visibleTo,
+            address,
+            radiusInMeters,
+          } = req.body;
+
+          const want = await this.settings.wantsService.createWant({
+            creatorId: userId,
+            title,
+            description,
+            visibility,
+            visibleTo,
+            address,
+            radiusInMeters,
           });
 
           req.log.info(want, 'Want created!');
@@ -84,7 +88,7 @@ class WantsRouter {
           throw new NotFoundError(`Want ${wantId} not found`);
         }
 
-        if (!want.adminsIds.includes(userId)) {
+        if (!want.administratorsIds.includes(userId)) {
           throw new ForbiddenError(
             `User ${userId} cannot update the Want ${want.id} image`
           );
@@ -126,6 +130,30 @@ class WantsRouter {
       }
     });
 
+    router.get('/', async (req, res, next) => {
+      try {
+        const userId = req.userId;
+
+        if (!userId) {
+          throw new UnauthorizedError('User not found in the request');
+        }
+
+        const wants = await this.settings.wantsService.listWants({
+          userId,
+          orderBy: [
+            {
+              column: 'createdAt',
+              direction: 'desc',
+            },
+          ],
+        });
+
+        return res.json(wants);
+      } catch (err) {
+        return next(err);
+      }
+    });
+
     router.get(
       '/home-feed',
       celebrate({
@@ -133,10 +161,12 @@ class WantsRouter {
           .keys({
             latitude: Joi.number()
               .min(GeolocationCoordinates.minLatitude)
-              .max(GeolocationCoordinates.maxLatitude),
+              .max(GeolocationCoordinates.maxLatitude)
+              .required(),
             longitude: Joi.number()
               .min(GeolocationCoordinates.minLongitude)
-              .max(GeolocationCoordinates.maxLongitude),
+              .max(GeolocationCoordinates.maxLongitude)
+              .required(),
           })
           .required(),
       }),
@@ -148,33 +178,19 @@ class WantsRouter {
             throw new UnauthorizedError('User not found in the request');
           }
 
-          let geolocationCoordinates;
+          const {latitude, longitude} = req.query;
 
-          if (req.query.latitude || req.query.longitude) {
-            if (!req.query.latitude) {
-              throw new RangeError(
-                'latitude is required when longitude is set'
-              );
-            }
+          const geolocationCoordinates = new GeolocationCoordinates(
+            Number.parseFloat(latitude as string),
+            Number.parseFloat(longitude as string)
+          );
 
-            if (!req.query.longitude) {
-              throw new RangeError(
-                'longitude is required when latitude is set'
-              );
-            }
-
-            geolocationCoordinates = new GeolocationCoordinates(
-              Number.parseFloat(req.query.latitude as string),
-              Number.parseFloat(req.query.longitude as string)
-            );
-          }
-
-          const wantsFeed = await this.settings.wantsService.getHomeWantsFeed({
-            userId: userId,
+          const wants = await this.settings.wantsService.listHomeFeed({
+            userId,
             geolocationCoordinates,
           });
 
-          return res.json(wantsFeed);
+          return res.json(wants);
         } catch (err) {
           return next(err);
         }

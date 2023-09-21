@@ -3,7 +3,6 @@ interface FriendRequest {
   fromUserId: string;
   toUserId: string;
   createdAt: Date;
-  deletedAt: Date | null;
 }
 
 export {FriendRequest};

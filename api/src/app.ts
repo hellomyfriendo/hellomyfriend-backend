@@ -4,8 +4,8 @@ import cors from 'cors';
 import pinoHttp from 'pino-http';
 import helmet from 'helmet';
 import fileUpload from 'express-fileupload';
+import postgres from 'postgres';
 import * as firebaseAdmin from 'firebase-admin';
-import {Firestore} from '@google-cloud/firestore';
 import {LanguageServiceClient} from '@google-cloud/language';
 import {Storage} from '@google-cloud/storage';
 import {ImageAnnotatorClient} from '@google-cloud/vision';
@@ -24,16 +24,23 @@ import {errorHandler} from './error-handler';
 import {logger} from './logger';
 import {config} from './config';
 
+const sql = postgres({
+  host: config.database.host,
+  port: config.database.port,
+  username: config.database.username,
+  password: config.database.password,
+  database: config.database.name,
+  transform: {
+    ...postgres.camel,
+    undefined: null,
+  },
+});
+
 firebaseAdmin.initializeApp({
   projectId: config.google.projectId,
 });
 
 const firebaseAdminAuth = firebaseAdmin.auth();
-
-const firestore = new Firestore({
-  projectId: config.google.projectId,
-  ignoreUndefinedProperties: true,
-});
 
 const languageServiceClient = new LanguageServiceClient({
   projectId: config.google.projectId,
@@ -49,38 +56,23 @@ const imageAnnotatorClient = new ImageAnnotatorClient({
 
 const googleMapsServicesClient = new Client({});
 
-const usersServiceV1 = new UsersService({
+const usersService = new UsersService({
   auth: firebaseAdminAuth,
 });
 
 const friendsService = new FriendsService({
-  firestore: {
-    client: firestore,
-    collections: {
-      friendships: config.friends.firestore.collections.friendships,
-    },
-  },
-  usersService: usersServiceV1,
+  sql,
+  usersService,
 });
 
 const friendRequestsService = new FriendRequestsService({
-  firestore: {
-    client: firestore,
-    collections: {
-      friendRequests: config.friends.firestore.collections.friendRequests,
-    },
-  },
-  friendsService: friendsService,
-  usersService: usersServiceV1,
+  sql,
+  friendsService,
+  usersService,
 });
 
 const wantsService = new WantsService({
-  firestore: {
-    client: firestore,
-    collections: {
-      wants: config.wants.firestore.collections.wants,
-    },
-  },
+  sql,
   language: {
     client: languageServiceClient,
   },
@@ -96,10 +88,10 @@ const wantsService = new WantsService({
   googleMapsServicesClient,
   googleApiKey: config.google.apiKey,
   friendsService: friendsService,
-  usersService: usersServiceV1,
+  usersService: usersService,
 });
 
-const healthCheckRouter = new HealthCheckRouter().router;
+const healthCheckRouter = new HealthCheckRouter({sql}).router;
 
 const friendsRouter = new FriendsRouter({friendsService: friendsService})
   .router;

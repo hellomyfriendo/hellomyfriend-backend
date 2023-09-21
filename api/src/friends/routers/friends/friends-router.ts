@@ -27,6 +27,12 @@ class FriendsRouter {
 
         const friends = await this.settings.friendsService.listFriendships({
           userId: userId,
+          orderBy: [
+            {
+              column: 'createdAt',
+              direction: 'asc',
+            },
+          ],
         });
 
         return res.json(friends);
@@ -55,7 +61,7 @@ class FriendsRouter {
           throw new NotFoundError(`Friendship ${friendshipId} not found`);
         }
 
-        if (!(friendship.userId1 === userId || friendship.userId2 === userId)) {
+        if (!(friendship.user1Id === userId || friendship.user2Id === userId)) {
           throw new ForbiddenError(
             `User ${userId} cannot delete Friendship ${friendship.id}`
           );

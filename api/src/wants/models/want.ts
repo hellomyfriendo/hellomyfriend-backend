@@ -1,18 +1,21 @@
-import {WantImage} from './want-image';
+import {GeolocationCoordinates} from './geolocation-coordinates';
 import {WantVisibility} from './want-visibility';
 
 interface Want {
   id: string;
   creatorId: string;
-  adminsIds: string[];
+  administratorsIds: string[];
   membersIds: string[];
   title: string;
-  description: string | null;
+  description?: string;
+  imageURL?: string;
   visibility: WantVisibility;
-  image: WantImage | null;
+  visibleTo?: string[];
+  address: string;
+  coordinates: GeolocationCoordinates;
+  radiusInMeters: number;
   createdAt: Date;
   updatedAt: Date;
-  deletedAt?: Date;
 }
 
 export {Want};

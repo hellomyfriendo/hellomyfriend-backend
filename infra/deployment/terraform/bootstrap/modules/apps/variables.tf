@@ -18,39 +18,9 @@ variable "region" {
   description = "The default Google Cloud region for the created resources."
 }
 
-variable "public_kms_crypto_key" {
-  type        = string
-  description = "The Public KMS crypto key."
-}
-
-variable "internal_kms_crypto_key" {
-  type        = string
-  description = "The Internal KMS crypto key."
-}
-
-variable "confidential_kms_crypto_key" {
-  type        = string
-  description = "The Confidential KMS crypto key."
-}
-
-variable "restricted_kms_crypto_key" {
-  type        = string
-  description = "The Confidential KMS crypto key."
-}
-
 variable "api_sa_email" {
   type        = string
   description = "The email of the API service account."
-}
-
-variable "api_domain_name" {
-  type        = string
-  description = "The API domain name."
-}
-
-variable "cloudbuild_apps_sa_email" {
-  type        = string
-  description = "The email of the Cloud Build apps service account."
 }
 
 variable "monitoring_alerts_emails" {

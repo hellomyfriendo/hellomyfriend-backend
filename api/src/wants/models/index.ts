@@ -1,5 +1,4 @@
 export {Want} from './want';
+export {WantMemberRole} from './want-member-role';
 export {WantVisibility} from './want-visibility';
-export {WantVisibleTo} from './want-visible-to';
-export {WantImage} from './want-image';
 export {GeolocationCoordinates} from './geolocation-coordinates';

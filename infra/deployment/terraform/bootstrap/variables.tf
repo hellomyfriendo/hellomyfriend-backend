@@ -23,11 +23,6 @@ variable "region" {
   description = "The default Google Cloud region for the created resources."
 }
 
-variable "api_domain_name" {
-  type        = string
-  description = "The API domain name."
-}
-
 variable "developers_group_email" {
   type        = string
   description = "Developers group email."

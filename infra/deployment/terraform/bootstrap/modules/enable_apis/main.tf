@@ -4,20 +4,25 @@ locals {
     "artifactregistry.googleapis.com",
     "cloudasset.googleapis.com",
     "cloudbuild.googleapis.com",
-    "cloudkms.googleapis.com",
     "cloudresourcemanager.googleapis.com",
     "compute.googleapis.com",
-    "firestore.googleapis.com",
+    "deploymentmanager.googleapis.com",
     "geocoding-backend.googleapis.com",
     "identitytoolkit.googleapis.com",
     "iam.googleapis.com",
     "language.googleapis.com",
     "maps-backend.googleapis.com",
+    "monitoring.googleapis.com",
+    "networkmanagement.googleapis.com",
+    "orgpolicy.googleapis.com",
     "run.googleapis.com",
     "secretmanager.googleapis.com",
+    "servicenetworking.googleapis.com",
     "serviceusage.googleapis.com",
     "sourcerepo.googleapis.com",
-    "vision.googleapis.com"
+    "sqladmin.googleapis.com",
+    "vision.googleapis.com",
+    "vpcaccess.googleapis.com"
   ]
 }
 

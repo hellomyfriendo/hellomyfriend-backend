@@ -1,10 +1,3 @@
-locals {
-  friends_v1_friendships_collection     = "v1-friendships"
-  friends_v1_friend_requests_collection = "v1-friend-requests"
-
-  wants_v1_wants_collection = "v1-wants"
-}
-
 data "docker_registry_image" "api" {
   name = var.api_image
 }
@@ -12,11 +5,11 @@ data "docker_registry_image" "api" {
 resource "google_cloud_run_v2_service" "api" {
   name     = "api"
   location = var.region
-  ingress  = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
+  # TODO(Marcus): Uncomment when I figure where the Load Balancer will be
+  # ingress  = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
 
   template {
     service_account = var.api_sa_email
-    encryption_key  = var.confidential_kms_crypto_key
 
     containers {
       image = "${var.api_image}@${data.docker_registry_image.api.sha256_digest}"
@@ -55,27 +48,52 @@ resource "google_cloud_run_v2_service" "api" {
         value = "production"
       }
       env {
-        name  = "FRIENDS_V1_FIRESTORE_FRIENDSHIPS_COLLECTION"
-        value = local.friends_v1_friendships_collection
+        name  = "PGHOST"
+        value = module.postgresql_database.private_ip_address
       }
       env {
-        name  = "FRIENDS_V1_FIRESTORE_FRIEND_REQUESTS_COLLECTION"
-        value = local.friends_v1_friend_requests_collection
+        name  = "PGPORT"
+        value = local.database_port
       }
       env {
-        name  = "WANTS_V1_FIRESTORE_WANTS_COLLECTION"
-        value = local.wants_v1_wants_collection
+        name  = "PGDATABASE"
+        value = local.database_name
+      }
+      env {
+        name  = "PGUSERNAME"
+        value = local.database_username
+      }
+      env {
+        name = "PGPASSWORD"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.database_password.secret_id
+            version = "latest"
+          }
+        }
       }
       env {
         name  = "WANTS_V1_STORAGE_WANTS_ASSETS_BUCKET"
         value = google_storage_bucket.wants_assets.name
       }
     }
+
+    # TODO(Marcus): Raise this when I can pay for it
+    scaling {
+      max_instance_count = 1
+    }
+
+    vpc_access {
+      # TODO(Marcus): Figure out if I can or should use direct VPC egress. See https://cloud.google.com/run/docs/configuring/shared-vpc-direct-vpc.
+      connector = data.google_vpc_access_connector.api.id
+      egress    = "PRIVATE_RANGES_ONLY"
+    }
   }
 
   depends_on = [
-    google_secret_manager_secret_iam_member.api_key_api_sa,
-    google_storage_bucket_iam_member.wants_assets_api_sa
+    google_secret_manager_secret_iam_member.api_sa_database_password,
+    google_secret_manager_secret_iam_member.api_sa_api_key,
+    google_storage_bucket_iam_member.api_sa_wants_assets
   ]
 }
 
@@ -83,6 +101,12 @@ resource "google_tags_location_tag_binding" "all_users_ingress_api" {
   parent    = "//run.googleapis.com/projects/${data.google_project.project.number}/locations/${google_cloud_run_v2_service.api.location}/services/${google_cloud_run_v2_service.api.name}"
   tag_value = var.all_users_ingress_tag_value_id
   location  = google_cloud_run_v2_service.api.location
+}
+
+resource "time_sleep" "wait_google_tags_location_tag_binding_all_users_ingress_api" {
+  depends_on = [google_tags_location_tag_binding.all_users_ingress_api]
+
+  create_duration = "30s"
 }
 
 resource "google_cloud_run_service_iam_member" "allow_unauthenticated" {
@@ -93,6 +117,6 @@ resource "google_cloud_run_service_iam_member" "allow_unauthenticated" {
   member   = "allUsers"
 
   depends_on = [
-    google_tags_location_tag_binding.all_users_ingress_api
+    time_sleep.wait_google_tags_location_tag_binding_all_users_ingress_api
   ]
 }

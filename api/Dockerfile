@@ -10,5 +10,6 @@ RUN \
 FROM gcr.io/distroless/nodejs18-debian11
 COPY --from=build-env /app/build /app/build
 COPY --from=build-env /app/node_modules /app/node_modules
+COPY --from=build-env /app/migrations /app/migrations
 WORKDIR /app
 CMD ["build/src/index.js"]
