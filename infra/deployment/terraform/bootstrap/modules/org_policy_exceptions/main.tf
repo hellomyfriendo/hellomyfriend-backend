@@ -25,6 +25,15 @@ resource "google_org_policy_policy" "compute_requireVpcFlowLogs" {
   }
 }
 
+resource "google_org_policy_policy" "iam_disableServiceAccountKeyCreation" {
+  name   = "${local.org_policy_name_prefix}/iam.disableServiceAccountKeyCreation"
+  parent = local.org_policy_parent
+
+  spec {
+    reset = true
+  }
+}
+
 resource "google_org_policy_policy" "run_allowedIngress" {
   name   = "${local.org_policy_name_prefix}/run.allowedIngress"
   parent = local.org_policy_parent
