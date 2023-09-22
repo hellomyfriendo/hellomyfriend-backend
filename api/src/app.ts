@@ -4,12 +4,12 @@ import cors from 'cors';
 import pinoHttp from 'pino-http';
 import helmet from 'helmet';
 import fileUpload from 'express-fileupload';
-import postgres from 'postgres';
 import * as firebaseAdmin from 'firebase-admin';
 import {LanguageServiceClient} from '@google-cloud/language';
 import {Storage} from '@google-cloud/storage';
 import {ImageAnnotatorClient} from '@google-cloud/vision';
 import {Client} from '@googlemaps/google-maps-services-js';
+import {db} from './db';
 import {HealthCheckRouter} from './health-check';
 import {UsersService} from './users';
 import {
@@ -23,18 +23,6 @@ import {Auth} from './middleware';
 import {errorHandler} from './error-handler';
 import {logger} from './logger';
 import {config} from './config';
-
-const sql = postgres({
-  host: config.database.host,
-  port: config.database.port,
-  username: config.database.username,
-  password: config.database.password,
-  database: config.database.name,
-  transform: {
-    ...postgres.camel,
-    undefined: null,
-  },
-});
 
 firebaseAdmin.initializeApp({
   projectId: config.google.projectId,
@@ -61,18 +49,18 @@ const usersService = new UsersService({
 });
 
 const friendsService = new FriendsService({
-  sql,
+  knex: db,
   usersService,
 });
 
 const friendRequestsService = new FriendRequestsService({
-  sql,
+  knex: db,
   friendsService,
   usersService,
 });
 
 const wantsService = new WantsService({
-  sql,
+  knex: db,
   language: {
     client: languageServiceClient,
   },
@@ -91,7 +79,7 @@ const wantsService = new WantsService({
   usersService: usersService,
 });
 
-const healthCheckRouter = new HealthCheckRouter({sql}).router;
+const healthCheckRouter = new HealthCheckRouter({knex: db}).router;
 
 const friendsRouter = new FriendsRouter({friendsService: friendsService})
   .router;

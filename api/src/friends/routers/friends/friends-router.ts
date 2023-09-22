@@ -30,7 +30,7 @@ class FriendsRouter {
           orderBy: [
             {
               column: 'createdAt',
-              direction: 'asc',
+              order: 'asc',
             },
           ],
         });

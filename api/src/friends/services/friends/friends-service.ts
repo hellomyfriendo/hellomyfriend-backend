@@ -1,10 +1,10 @@
-import {Sql} from 'postgres';
+import {Knex} from 'knex';
 import {UsersService} from '../../../users';
 import {Friendship} from '../../models';
 import {AlreadyExistsError, NotFoundError} from '../../../errors';
 
 interface FriendsServiceSettings {
-  sql: Sql;
+  knex: Knex;
   usersService: UsersService;
 }
 
@@ -12,7 +12,7 @@ interface ListFriendshipsOptions {
   userId?: string;
   orderBy?: {
     column: 'createdAt';
-    direction: 'asc' | 'desc';
+    order: 'asc' | 'desc';
   }[];
 }
 
@@ -43,15 +43,14 @@ class FriendsService {
       throw new NotFoundError(`User ${user2Id} not found`);
     }
 
-    const {sql} = this.settings;
+    const {knex} = this.settings;
 
-    const [friendship] = await sql<Friendship[]>`
-      INSERT INTO ${sql(this.friendsTable)} ${sql([
-      {user1Id, user2Id},
-      {user1Id: user2Id, user2Id: user1Id},
-    ])}
-      RETURNING *
-    `;
+    const [friendship] = await knex<Friendship>(this.friendsTable)
+      .insert([
+        {user1Id: user1Id, user2Id: user2Id},
+        {user1Id: user2Id, user2Id: user1Id},
+      ])
+      .returning('*');
 
     return friendship;
   }
@@ -59,14 +58,11 @@ class FriendsService {
   async getFriendshipById(
     friendshipId: string
   ): Promise<Friendship | undefined> {
-    const {sql} = this.settings;
+    const {knex} = this.settings;
 
-    const [friendship]: [Friendship?] = await sql`
-      SELECT *
-      FROM ${sql(this.friendsTable)}
-      WHERE ${sql('deletedAt')} IS NULL
-      AND id = ${friendshipId}
-    `;
+    const [friendship] = await knex<Friendship>(this.friendsTable).where({
+      id: friendshipId,
+    });
 
     return friendship;
   }
@@ -74,29 +70,27 @@ class FriendsService {
   async listFriendships(
     options: ListFriendshipsOptions
   ): Promise<Friendship[]> {
-    const {sql} = this.settings;
+    const {knex} = this.settings;
 
-    const friendships = await sql<Friendship[]>`
-      SELECT * 
-      FROM ${sql(this.friendsTable)}
-      WHERE ${sql('deletedAt')} IS NULL
-      ${options.userId ? sql`AND ${sql('user1Id')} = ${options.userId}` : sql``}
-      ${
-        options.orderBy
-          ? sql`ORDER BY ${options.orderBy.map((x, i) => {
-              return `${i ? sql`,` : sql``} ${sql(x.column)} ${
-                x.direction === 'asc' ? sql`ASC` : sql`DESC`
-              }`;
-            })}`
-          : sql``
+    const friendships = await knex<Friendship>(this.friendsTable).modify(
+      queryBuilder => {
+        if (options.userId) {
+          queryBuilder.where('user1Id', options.userId);
+        }
+
+        if (options.orderBy) {
+          queryBuilder.orderBy(options.orderBy);
+        }
+
+        return queryBuilder;
       }
-    `;
+    );
 
     return friendships;
   }
 
   async deleteFriendship(friendshipId: string) {
-    const {sql} = this.settings;
+    const {knex} = this.settings;
 
     const friendship = await this.getFriendshipById(friendshipId);
 
@@ -104,33 +98,23 @@ class FriendsService {
       throw new NotFoundError(`Friendship ${friendshipId} not found`);
     }
 
-    await sql`
-      UPDATE ${sql(this.friendsTable)}
-      SET ${sql('deletedAt')} = NOW()
-      WHERE ${sql('deletedAt')} IS NULL
-      AND (
-        (${sql('user1Id')} = ${friendship.user1Id} AND ${sql('user2Id')} = ${
-      friendship.user2Id
-    }) OR (${sql('user1Id')} = ${friendship.user2Id}  AND ${sql('user2Id')} = ${
-      friendship.user1Id
-    })
-      )
-    `;
+    await knex(this.friendsTable)
+      .where({user1Id: friendship.user1Id, user2Id: friendship.user2Id})
+      .orWhere({user1Id: friendship.user2Id, user2Id: friendship.user1Id})
+      .delete();
   }
 
   async areFriends(user1Id: string, user2Id: string) {
-    const {sql} = this.settings;
+    const {knex} = this.settings;
 
-    const [{exists}]: [{exists: boolean}] = await sql`
-      SELECT EXISTS(
-        SELECT 1 FROM ${sql(this.friendsTable)}
-        WHERE ${sql('deletedAt')} IS NULL
-        AND ${sql('user1Id')} = ${user1Id}
-        AND ${sql('user2Id')} = ${user2Id}
-      );
-    `;
+    const [result] = await knex<boolean>(this.friendsTable).whereExists(
+      knex.select('id').from(this.friendsTable).where({
+        user1Id,
+        user2Id,
+      })
+    );
 
-    return exists;
+    return result;
   }
 }
 

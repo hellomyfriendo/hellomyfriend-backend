@@ -21,7 +21,9 @@
     "start": "docker compose up --build",
     "database:up": "docker compose up database --detach --wait",
     "down": "docker compose down",
-    "migrate": "ley --require dotenv-expand/config",
+    "knex": "knex",
+    "migrate:latest": "knex migrate:latest",
+    "migrate:rollback": "knex migrate:rollback",
     "prepare": "npm run compile",
     "pretest": "npm run compile",
     "posttest": "npm run lint"
@@ -63,12 +65,12 @@
     "geofire-common": "^6.0.0",
     "helmet": "^7.0.0",
     "http-status-codes": "^2.2.0",
+    "knex": "^2.5.1",
     "knex-stringcase": "^1.4.6",
-    "ley": "^0.8.1",
     "lodash": "^4.17.21",
     "mime-types": "^2.1.35",
+    "pg": "^8.11.3",
     "pino": "^8.14.1",
-    "pino-http": "^8.3.3",
-    "postgres": "^3.3.5"
+    "pino-http": "^8.3.3"
   }
 }

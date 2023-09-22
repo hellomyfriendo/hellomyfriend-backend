@@ -2,17 +2,20 @@ import {Joi} from 'celebrate';
 
 const envVarsSchema = Joi.object()
   .keys({
-    PGHOST: Joi.string().required(),
-    PGPORT: Joi.number().integer().required(),
-    PGUSERNAME: Joi.string().required(),
-    PGPASSWORD: Joi.string().required(),
-    PGDATABASE: Joi.string().required(),
     GOOGLE_API_KEY: Joi.string().required(),
     GOOGLE_PROJECT_ID: Joi.string().required(),
     K_REVISION: Joi.string().required(),
     K_SERVICE: Joi.string().required(),
     LOG_LEVEL: Joi.string().valid('debug', 'info').default('info'),
+    NODE_ENV: Joi.string()
+      .valid('development', 'test', 'production')
+      .default('production'),
     PORT: Joi.number().integer().required(),
+    PGHOST: Joi.string().required(),
+    PGPORT: Joi.number().integer().required(),
+    PGUSERNAME: Joi.string().required(),
+    PGPASSWORD: Joi.string().required(),
+    PGDATABASE: Joi.string().required(),
     WANTS_V1_STORAGE_WANTS_ASSETS_BUCKET: Joi.string().required(),
   })
   .unknown();
@@ -41,6 +44,7 @@ const config = {
   },
   logLevel: envVars.LOG_LEVEL,
   port: envVars.PORT,
+  nodeEnv: envVars.NODE_ENV,
   wants: {
     storage: {
       buckets: {

@@ -143,7 +143,7 @@ class WantsRouter {
           orderBy: [
             {
               column: 'createdAt',
-              direction: 'desc',
+              order: 'desc',
             },
           ],
         });
