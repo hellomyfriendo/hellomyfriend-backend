@@ -1,5 +1,9 @@
+resource "random_id" "api_key" {
+  byte_length = 2
+}
+
 resource "google_apikeys_key" "api" {
-  name         = "api-api-key"
+  name         = "api-api-key-${random_id.api_key.hex}"
   display_name = "API API Key"
 
   restrictions {

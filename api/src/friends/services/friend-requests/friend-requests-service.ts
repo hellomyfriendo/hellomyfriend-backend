@@ -1,11 +1,11 @@
-import {Sql} from 'postgres';
+import {Knex} from 'knex';
 import {UsersService} from '../../../users';
 import {FriendRequest} from '../../models';
 import {FriendsService} from '../friends';
 import {AlreadyExistsError, NotFoundError} from '../../../errors';
 
 interface FriendRequestsServiceSettings {
-  sql: Sql;
+  knex: Knex;
   friendsService: FriendsService;
   usersService: UsersService;
 }
@@ -15,7 +15,7 @@ interface ListFriendRequestsOptions {
   toUserId?: string;
   orderBy?: {
     column: 'createdAt';
-    direction: 'asc' | 'desc';
+    order: 'asc' | 'desc';
   }[];
 }
 
@@ -38,6 +38,14 @@ class FriendRequestsService {
       );
     }
 
+    if (
+      await this.getFriendRequestByFromUserIdAndToUserId(toUserId, fromUserId)
+    ) {
+      throw new AlreadyExistsError(
+        `A Friend Request from ${toUserId} to ${fromUserId} already exists`
+      );
+    }
+
     const fromUser = await this.settings.usersService.getUserById(fromUserId);
 
     if (!fromUser) {
@@ -50,15 +58,13 @@ class FriendRequestsService {
       throw new NotFoundError(`To user ${toUserId} not found`);
     }
 
-    const {sql} = this.settings;
+    const {knex} = this.settings;
 
-    const [friendRequest]: [FriendRequest] = await sql`
-      INSERT INTO ${sql(this.friendRequestsTable)} ${sql({
-      fromUserId,
-      toUserId,
-    })}
-      RETURNING *
-    `;
+    const [friendRequest] = await knex<FriendRequest>(this.friendRequestsTable)
+      .insert({fromUserId, toUserId})
+      .onConflict(['fromUserId', 'toUserId'])
+      .merge()
+      .returning('*');
 
     return friendRequest;
   }
@@ -66,14 +72,11 @@ class FriendRequestsService {
   async getFriendRequestById(
     friendRequestId: string
   ): Promise<FriendRequest | undefined> {
-    const {sql} = this.settings;
+    const {knex} = this.settings;
 
-    const [friendRequest]: [FriendRequest?] = await sql`
-      SELECT *
-      FROM ${sql(this.friendRequestsTable)}
-      WHERE deleted_at IS NULL
-      AND id = ${friendRequestId}
-    `;
+    const [friendRequest] = await knex<FriendRequest>(
+      this.friendRequestsTable
+    ).where({id: friendRequestId});
 
     return friendRequest;
   }
@@ -82,15 +85,11 @@ class FriendRequestsService {
     fromUserId: string,
     toUserId: string
   ): Promise<FriendRequest | undefined> {
-    const {sql} = this.settings;
+    const {knex} = this.settings;
 
-    const [friendRequest]: [FriendRequest?] = await sql`
-      SELECT *
-      FROM ${sql(this.friendRequestsTable)}
-      WHERE ${sql('deletedAt')} IS NULL
-      AND ${sql('fromUserId')} = ${fromUserId}
-      AND ${sql('toUserId')} = ${toUserId}
-    `;
+    const [friendRequest] = await knex<FriendRequest>(
+      this.friendRequestsTable
+    ).where({fromUserId, toUserId});
 
     return friendRequest;
   }
@@ -98,47 +97,37 @@ class FriendRequestsService {
   async listFriendRequests(
     options: ListFriendRequestsOptions
   ): Promise<FriendRequest[]> {
-    const {sql} = this.settings;
+    const {knex} = this.settings;
 
-    const friendRequests = await sql<FriendRequest[]>`
-      SELECT *
-      FROM ${sql(this.friendRequestsTable)}
-      WHERE ${sql('deletedAt')} IS NULL
-      ${
-        options.fromUserId
-          ? sql`AND ${sql('fromUserId')} = ${options.fromUserId}`
-          : sql``
+    const friendRequests = await knex<FriendRequest>(
+      this.friendRequestsTable
+    ).modify(queryBuilder => {
+      if (options.fromUserId) {
+        queryBuilder.where('fromUserId', options.fromUserId);
       }
-      ${
-        options.toUserId
-          ? sql`AND ${sql('toUserId')} = ${options.toUserId}`
-          : sql``
+
+      if (options.toUserId) {
+        queryBuilder.where('toUserId', options.toUserId);
       }
-      ${
-        options.orderBy
-          ? sql`ORDER BY ${options.orderBy.map((x, i) => {
-              return `${i ? sql`,` : sql``} ${sql(x.column)} ${
-                x.direction === 'asc' ? sql`ASC` : sql`DESC`
-              }`;
-            })}`
-          : sql``
+
+      if (options.orderBy) {
+        queryBuilder.orderBy(options.orderBy);
       }
-    `;
+
+      return queryBuilder;
+    });
 
     return friendRequests;
   }
 
   async deleteFriendRequest(friendRequestId: string): Promise<void> {
-    const {sql} = this.settings;
+    const {knex} = this.settings;
 
-    const queryResult = await sql`
-      UPDATE ${sql(this.friendRequestsTable)}
-      SET ${sql('deletedAt')} = NOW()
-      WHERE id = ${friendRequestId}
-      AND deleted_at IS NULL
-    `;
+    const rowCount = await knex(this.friendRequestsTable)
+      .where({id: friendRequestId})
+      .delete();
 
-    if (queryResult.count === 0) {
+    if (rowCount === 0) {
       throw new NotFoundError(`Friend Request ${friendRequestId} not found`);
     }
   }

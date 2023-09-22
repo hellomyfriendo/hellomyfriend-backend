@@ -60,8 +60,13 @@ resource "google_cloud_run_v2_service" "api" {
         value = local.database_name
       }
       env {
-        name  = "PGUSERNAME"
-        value = local.database_username
+        name = "PGUSERNAME"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.database_username.secret_id
+            version = "latest"
+          }
+        }
       }
       env {
         name = "PGPASSWORD"
@@ -85,7 +90,7 @@ resource "google_cloud_run_v2_service" "api" {
 
     vpc_access {
       # TODO(Marcus): Figure out if I can or should use direct VPC egress. See https://cloud.google.com/run/docs/configuring/shared-vpc-direct-vpc.
-      connector = data.google_vpc_access_connector.api.id
+      connector = var.vpc_access_connector_id
       egress    = "PRIVATE_RANGES_ONLY"
     }
   }
@@ -108,7 +113,7 @@ resource "time_sleep" "wait_google_tags_location_tag_binding_all_users_ingress_a
     google_tags_location_tag_binding.all_users_ingress_api
   ]
 
-  create_duration = "30s"
+  create_duration = "90s"
 }
 
 resource "google_cloud_run_service_iam_member" "allow_unauthenticated" {

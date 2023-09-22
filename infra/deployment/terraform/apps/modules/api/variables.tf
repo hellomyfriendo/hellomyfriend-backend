@@ -33,7 +33,7 @@ variable "api_database_allocated_ip_range" {
   description = "The database allocated IP range."
 }
 
-variable "vpc_access_connector_name" {
+variable "vpc_access_connector_id" {
   type        = string
-  description = "The name of the VPC Access connector to use."
+  description = "The ID of the VPC Access connector to use."
 }

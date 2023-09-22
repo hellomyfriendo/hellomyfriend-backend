@@ -1,9 +1,9 @@
 import {Router} from 'express';
 import {StatusCodes} from 'http-status-codes';
-import {Sql} from 'postgres';
+import {Knex} from 'knex';
 
 interface HealthCheckRouterSettings {
-  sql: Sql;
+  knex: Knex;
 }
 
 class HealthCheckRouter {
@@ -14,11 +14,9 @@ class HealthCheckRouter {
 
     router.get('/', async (req, res, next) => {
       try {
-        const {sql} = this.settings;
+        const {knex} = this.settings;
 
-        await sql`
-          SELECT VERSION()
-        `;
+        await knex.raw('SELECT VERSION()');
 
         return res.sendStatus(StatusCodes.OK);
       } catch (err) {

@@ -5,16 +5,17 @@ services:
     ports:
       - ${PORT}:${PORT}
     environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GOOGLE_PROJECT_ID=${GOOGLE_PROJECT_ID}
+      - K_REVISION=${K_REVISION}
+      - K_SERVICE=${K_SERVICE}
       - PGHOST=database
       - PGPORT=${PGPORT}
+      - PORT=${PORT}
       - PGUSERNAME=${PGUSERNAME}
       - PGPASSWORD=${PGPASSWORD}
       - PGDATABASE=${PGDATABASE}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      - GOOGLE_PROJECT_ID=${GOOGLE_PROJECT_ID}
-      - PORT=${PORT}
-      - K_REVISION=${K_REVISION}
-      - K_SERVICE=${K_SERVICE}
+      - WANTS_V1_STORAGE_WANTS_ASSETS_BUCKET=${WANTS_V1_STORAGE_WANTS_ASSETS_BUCKET}
     depends_on:
       database:
         condition: service_healthy
@@ -29,7 +30,7 @@ services:
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready"]
+      test: ['CMD-SHELL', 'pg_isready']
       interval: 10s
       timeout: 5s
       retries: 5

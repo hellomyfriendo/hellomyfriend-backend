@@ -1,4 +1,4 @@
-import {Sql} from 'postgres';
+import {Knex} from 'knex';
 import {LanguageServiceClient} from '@google-cloud/language';
 import {Storage} from '@google-cloud/storage';
 import {ImageAnnotatorClient} from '@google-cloud/vision';
@@ -18,7 +18,7 @@ import {UsersService} from '../../../users';
 import {FriendsService} from '../../../friends';
 
 interface WantsServiceSettings {
-  sql: Sql;
+  knex: Knex;
   language: {
     client: LanguageServiceClient;
   };
@@ -50,7 +50,6 @@ interface WantRow {
   radiusInMeters: number;
   createdAt: Date;
   updatedAt: Date;
-  deletedAt?: Date;
 }
 
 interface WantMemberRow {
@@ -59,7 +58,7 @@ interface WantMemberRow {
   userId: string;
   role: WantMemberRole;
   createdAt: Date;
-  deletedAt?: Date;
+  updatedAt: Date;
 }
 
 interface WantVisibleToRow {
@@ -67,14 +66,13 @@ interface WantVisibleToRow {
   wantId: string;
   userId: string;
   createdAt: Date;
-  deletedAt?: Date;
 }
 
 interface WantImageRow {
   id: string;
   wantId: string;
-  googleStorageBucket: string;
-  googleStorageFile: string;
+  googleStorageBucket?: string;
+  googleStorageFile?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -93,7 +91,7 @@ interface ListWantsOptions {
   userId?: string;
   orderBy?: {
     column: 'createdAt';
-    direction: 'asc' | 'desc';
+    order: 'asc' | 'desc';
   }[];
 }
 
@@ -163,100 +161,68 @@ class WantsService {
       throw new RangeError('options.radiusInMeters must be an integer');
     }
 
-    const {sql} = this.settings;
+    const {knex} = this.settings;
 
-    const [wantId] = await sql.begin(async sql => {
-      const [{id: wantId}]: [{id: string}] = await sql`
-        INSERT INTO ${sql(this.wantsTable)}(
-          creator_id,
-          title,
-          description,
-          visibility,
-          address,
-          latitude,
-          longitude,
-          ${sql('googlePlaceId')},
-          ${sql('radiusInMeters')}
-        )
-        VALUES(
-          ${creator.id},
-          ${options.title},
-          ${options.description ? options.description : null},
-          ${options.visibility},
-          ${geocodeResult.formatted_address},
-          ${geocodeResult.geometry.location.lat},
-          ${geocodeResult.geometry.location.lng},
-          ${geocodeResult.place_id},
-          ${options.radiusInMeters}
-        )
-        RETURNING id
-      `;
+    const wantRow = await knex.transaction(async trx => {
+      const [wantRow] = await trx<WantRow>(this.wantsTable)
+        .insert({
+          creatorId: creator.id,
+          title: options.title,
+          description: options.description,
+          visibility: options.visibility,
+          address: geocodeResult.formatted_address,
+          latitude: geocodeResult.geometry.location.lat,
+          longitude: geocodeResult.geometry.location.lng,
+          googlePlaceId: geocodeResult.place_id,
+          radiusInMeters: options.radiusInMeters,
+        })
+        .returning('id');
 
-      await sql`
-          INSERT INTO ${sql(this.wantsMembersTable)}(
-            ${sql('wantId')},
-            ${sql('userId')},
-            role
-          )
-          VALUES(
-            ${wantId},
-            ${creator.id},
-            ${WantMemberRole.Administrator}
-          )
-        `;
+      await trx<WantMemberRow>(this.wantsMembersTable).insert({
+        wantId: wantRow.id,
+        userId: creator.id,
+        role: WantMemberRole.Administrator,
+      });
+
+      await trx<WantImageRow>(this.wantsImagesTable).insert({
+        wantId: wantRow.id,
+      });
 
       if (visibleTo.length > 0) {
-        await sql`
-          INSERT INTO ${sql(this.wantsVisibleToTable)} ${sql(
+        await trx<WantVisibleToRow>(this.wantsVisibleToTable).insert(
           visibleTo.map(userId => {
             return {
-              wantId,
+              wantId: wantRow.id,
               userId,
             };
           })
-        )}
-        `;
+        );
       }
 
-      return [wantId];
+      return wantRow;
     });
 
-    const want = await this.getWantById(wantId);
+    const want = await this.getWantById(wantRow.id);
 
     if (!want) {
-      throw new Error(`Want ${wantId} not found. This should not happen`);
+      throw new Error(`Want ${wantRow.id} not found. This should not happen`);
     }
 
     return want;
   }
 
   async getWantById(wantId: string): Promise<Want | undefined> {
-    const {sql} = this.settings;
+    const {knex} = this.settings;
 
-    const [wantRow]: [WantRow?] = await sql`
-      SELECT *
-      FROM ${sql(this.wantsTable)}
-      WHERE ${sql('deletedAt')} IS NULL
-      AND id = ${wantId}
-    `;
+    const [wantRow] = await knex<WantRow>(this.wantsTable).where({id: wantId});
 
-    if (!wantRow) {
-      throw new NotFoundError(`Want ${wantId} not found`);
-    }
+    const members = await knex<WantMemberRow>(this.wantsMembersTable).where({
+      wantId: wantRow.id,
+    });
 
-    const members: WantMemberRow[] = await sql`
-      SELECT ${sql('userId')}, role
-      FROM ${sql(this.wantsMembersTable)}
-      WHERE ${sql('deletedAt')} IS NULL
-      AND ${sql('wantId')} = ${wantId}
-    `;
-
-    const visibleTo: WantVisibleToRow[] = await sql`
-      SELECT ${sql('userId')}
-      FROM ${sql(this.wantsVisibleToTable)}
-      WHERE ${sql('deletedAt')} IS NULL
-      AND ${sql('wantId')} = ${wantId}
-    `;
+    const visibleTo = await knex<WantVisibleToRow>(
+      this.wantsVisibleToTable
+    ).where({wantId: wantRow.id});
 
     const imageURL = await this.getWantImageURL(wantId);
 
@@ -288,39 +254,36 @@ class WantsService {
   }
 
   async listWants(options: ListWantsOptions): Promise<Want[]> {
-    const {sql} = this.settings;
+    const {knex} = this.settings;
 
-    const wantsIdsRows: {id: string}[] = await sql`
-      SELECT w.id
-      FROM ${sql(this.wantsTable)} w
-      ${
-        options.userId
-          ? sql`JOIN ${sql(this.wantsMembersTable)} wm ON w.${sql(
-              'id'
-            )} = wm.${sql('wantId')}`
-          : sql``
-      }
-      WHERE w.${sql('deletedAt')} IS NULL
-      ${
-        options.userId
-          ? sql`AND wm.${sql('userId')} = ${options.userId} AND wm.${sql(
-              'deletedAt'
-            )} IS NULL`
-          : sql``
-      }
-      ${
-        options.orderBy
-          ? sql`ORDER BY ${options.orderBy.map((x, i) => {
-              return `${i ? sql`,` : sql``} ${sql(x.column)} ${
-                x.direction === 'asc' ? sql`ASC` : sql`DESC`
-              }`;
-            })}`
-          : sql``
-      }
-    `;
+    const wantRows: Pick<WantRow, 'id'>[] = await knex<WantRow>(this.wantsTable)
+      .select(`${this.wantsTable}.id`)
+      .modify(queryBuilder => {
+        if (options.userId) {
+          queryBuilder.join(
+            this.wantsMembersTable,
+            `${this.wantsTable}.id`,
+            '=',
+            `${this.wantsMembersTable}.wantId`
+          );
+        }
+
+        if (options.orderBy) {
+          queryBuilder.orderBy(
+            options.orderBy.map(ordering => {
+              return {
+                column: `${this.wantsTable}.${ordering.column}`,
+                order: ordering.order,
+              };
+            })
+          );
+        }
+
+        return queryBuilder;
+      });
 
     return await Promise.all(
-      wantsIdsRows.map(async wantRow => {
+      wantRows.map(async wantRow => {
         const want = await this.getWantById(wantRow.id);
 
         if (!want) {
@@ -371,7 +334,7 @@ class WantsService {
       return score;
     };
 
-    const {sql, friendsService, usersService} = this.settings;
+    const {knex, friendsService, usersService} = this.settings;
 
     const user = await usersService.getUserById(options.userId);
 
@@ -390,63 +353,39 @@ class WantsService {
       return friendship.user1Id;
     });
 
-    const publicWantsRows: Row[] = await sql`
-      SELECT 
-        id,
-        visibility, 
-        latitude,
-        longitude
-      FROM ${sql(this.wantsTable)}
-      WHERE ${sql('deletedAt')} IS NULL
-      AND visibility = ${WantVisibility.Public}
-      AND ST_DWithin(ST_MakePoint(longitude, latitude)::geography, ST_MakePoint(${
-        options.geolocationCoordinates.longitude
-      }, ${options.geolocationCoordinates.latitude})::geography, ${sql(
-      'radiusInMeters'
-    )})
-    `;
+    const publicWantsRows = await knex<WantRow>(this.wantsTable)
+      .select('id', 'visibility', 'latitude', 'longitude')
+      .where('visibility', WantVisibility.Public)
+      .whereRaw(
+        `ST_DWithin(ST_MakePoint(longitude, latitude)::geography, ST_MakePoint(${options.geolocationCoordinates.longitude}, ${options.geolocationCoordinates.latitude})::geography, radius_in_meters)`
+      );
 
-    console.log('publicWantsRows', publicWantsRows);
+    const friendsWantsRows = await knex<WantRow>(this.wantsTable)
+      .select('id', 'visibility', 'latitude', 'longitude')
+      .where('visibility', WantVisibility.Friends)
+      .whereIn('creatorId', userFriendsIds)
+      .whereRaw(
+        `ST_DWithin(ST_MakePoint(longitude, latitude)::geography, ST_MakePoint(${options.geolocationCoordinates.longitude}, ${options.geolocationCoordinates.latitude})::geography, radius_in_meters)`
+      );
 
-    const friendsWantsRows: Row[] = await sql`
-      SELECT 
-        id,
-        visibility, 
-        latitude,
-        longitude
-      FROM ${sql(this.wantsTable)}
-      WHERE ${sql('deletedAt')} IS NULL
-      AND visibility = ${WantVisibility.Friends}
-      AND ${sql('creatorId')} IN ${sql(userFriendsIds)}
-      AND ST_DWithin(ST_MakePoint(longitude, latitude)::geography, ST_MakePoint(${
-        options.geolocationCoordinates.longitude
-      }, ${options.geolocationCoordinates.latitude})::geography, ${sql(
-      'radiusInMeters'
-    )})
-    `;
-
-    console.log('friendsWantsRows', friendsWantsRows);
-
-    const visibleToWantsRows: Row[] = await sql`
-      SELECT 
-        w.id,
-        w.visibility, 
-        w.latitude,
-        w.longitude
-      FROM ${sql(this.wantsTable)} w
-      JOIN ${sql(this.wantsVisibleToTable)} wv ON w.id = wv.${sql('wantId')}
-      WHERE w.${sql('deletedAt')} IS NULL
-      AND w.visibility = ${WantVisibility.Specific}
-      AND ST_DWithin(ST_MakePoint(longitude, latitude)::geography, ST_MakePoint(${
-        options.geolocationCoordinates.longitude
-      }, ${options.geolocationCoordinates.latitude})::geography, ${sql(
-      'radiusInMeters'
-    )})
-      AND wv.${sql('deletedAt')} IS NULL
-      AND wv.${sql('userId')} = ${user.id}
-    `;
-
-    console.log('visibleToWantsRows', visibleToWantsRows);
+    const visibleToWantsRows = await knex<WantRow>(this.wantsTable)
+      .select(
+        `${this.wantsTable}.id`,
+        `${this.wantsTable}.visibility`,
+        `${this.wantsTable}.latitude`,
+        `${this.wantsTable}.longitude`
+      )
+      .join(
+        this.wantsVisibleToTable,
+        `${this.wantsTable}.id`,
+        '=',
+        `${this.wantsVisibleToTable}.wantId`
+      )
+      .where(`${this.wantsTable}.visibility`, WantVisibility.Specific)
+      .where(`${this.wantsVisibleToTable}.userId`, user.id)
+      .whereRaw(
+        `ST_DWithin(ST_MakePoint(longitude, latitude)::geography, ST_MakePoint(${options.geolocationCoordinates.longitude}, ${options.geolocationCoordinates.latitude})::geography, ${this.wantsTable}.radius_in_meters)`
+      );
 
     const rows = [
       ...publicWantsRows,
@@ -509,72 +448,74 @@ class WantsService {
       await this.validateWantVisibleTo(options.visibleTo);
     }
 
-    if (options.image) {
-      await this.validateWantImage(options.image.data);
-      await this.uploadWantImage(want.id, {
-        data: options.image.data,
-        mimeType: options.image.mimeType,
-      });
-    }
+    const {knex} = this.settings;
 
-    const {sql} = this.settings;
-
-    await sql.begin(async sql => {
+    await knex.transaction(async trx => {
       if (options.administratorsIds) {
-        await sql`
-          UPDATE ${this.wantsMembersTable} 
-          SET role = ${WantMemberRole.Administrator}
-          WHERE ${sql('wantId')} = ${want.id}
-          AND ${sql('userId')} IN ${options.administratorsIds}
-        `;
+        await trx<WantMemberRow>(this.wantsMembersTable)
+          .where({wantId: want.id})
+          .whereIn('userId', options.administratorsIds)
+          .update({
+            role: WantMemberRole.Administrator,
+            updatedAt: knex.fn.now(),
+          });
       }
 
       if (options.membersIds) {
-        await sql`
-          UPDATE ${this.wantsMembersTable} 
-          SET role = ${WantMemberRole.Member}
-          WHERE ${sql('wantId')} = ${want.id}
-          AND ${sql('userId')} IN ${options.membersIds}
-        `;
+        await trx<WantMemberRow>(this.wantsMembersTable)
+          .where({wantId: want.id})
+          .whereIn('userId', options.membersIds)
+          .update({role: WantMemberRole.Member, updatedAt: knex.fn.now()});
       }
 
-      const wantUpdate = {
-        title: options.title || want.title,
-        description: options.description || want.description,
-        visibility: options.visibility || want.visibility,
-      };
-
-      await sql`
-        UPDATE ${sql(this.wantsTable)}
-        SET 
-          title = ${wantUpdate.title}
-          ${
-            wantUpdate.description
-              ? sql`, description = ${wantUpdate.description}`
-              : sql``
+      await trx<WantRow>(this.wantsTable)
+        .where({id: want.id})
+        .modify(queryBuilder => {
+          if (options.title) {
+            queryBuilder.update({title: options.title});
           }
-          , visibility = ${wantUpdate.visibility}
-          , ${sql('updatedAt')} = now()
-        WHERE id = ${want.id}
-      `;
+
+          if (options.description) {
+            queryBuilder.update({description: options.description});
+          }
+
+          if (options.visibility) {
+            queryBuilder.update({visibility: options.visibility});
+          }
+
+          if (options.title || options.description || options.visibility) {
+            queryBuilder.update({updatedAt: knex.fn.now()});
+          }
+        });
 
       if (options.visibility === WantVisibility.Specific && options.visibleTo) {
-        await sql`
-          UPDATE ${sql(this.wantsVisibleToTable)}
-          SET ${sql('deletedAt')} = now()
-          WHERE ${sql('wantId')} = ${want.id}
-        `;
+        await trx<WantVisibleToRow>(this.wantsVisibleToTable)
+          .where({wantId: want.id})
+          .delete();
 
-        await sql`
-          INSERT INTO ${sql(this.wantsVisibleToTable)} ${sql(
+        await trx<WantVisibleToRow>(this.wantsVisibleToTable).insert(
           options.visibleTo.map(userId => {
             return {
               wantId: want.id,
               userId,
             };
           })
-        )}
-        `;
+        );
+      }
+
+      if (options.image) {
+        const wantImageUploadResult = await this.uploadWantImage(want.id, {
+          data: options.image.data,
+          mimeType: options.image.mimeType,
+        });
+
+        await trx<WantImageRow>(this.wantsImagesTable)
+          .where({wantId: want.id})
+          .update({
+            googleStorageBucket: wantImageUploadResult.storage.bucket,
+            googleStorageFile: wantImageUploadResult.storage.fileName,
+            updatedAt: knex.fn.now(),
+          });
       }
     });
 
@@ -590,24 +531,21 @@ class WantsService {
   }
 
   private async getWantImageURL(wantId: string): Promise<string | undefined> {
-    const {sql, storage} = this.settings;
+    const {knex, storage} = this.settings;
 
-    const [row]: [WantImageRow?] = await sql`
-      SELECT 
-        ${sql('googleStorageBucket')},
-        ${sql('googleStorageFile')}
-      FROM ${sql(this.wantsImagesTable)}
-      WHERE ${sql('wantId')} = ${wantId}
-    `;
-    if (!row) {
+    const [wantImageRow] = await knex<WantImageRow>(
+      this.wantsImagesTable
+    ).where({wantId});
+
+    if (!(wantImageRow.googleStorageBucket && wantImageRow.googleStorageFile)) {
       return;
     }
 
     const expires = dayjs().add(1, 'hour').toDate();
 
     const [imageURL] = await storage.client
-      .bucket(row.googleStorageBucket)
-      .file(row.googleStorageFile)
+      .bucket(wantImageRow.googleStorageBucket)
+      .file(wantImageRow.googleStorageFile)
       .getSignedUrl({
         action: 'read',
         expires,
@@ -646,7 +584,7 @@ class WantsService {
 
     await this.validateWantImage(image.data);
 
-    const {sql, storage} = this.settings;
+    const {storage} = this.settings;
 
     const fileName = `images/${wantId}.${mime.extension(image.mimeType)}`;
 
@@ -655,23 +593,6 @@ class WantsService {
       .file(fileName);
 
     await gcsFile.save(image.data);
-
-    await sql`
-      INSERT INTO ${sql(this.wantsImagesTable)}(
-        ${sql('wantId')},
-        ${sql('googleStorageBucket')},
-        ${sql('googleStorageFile')}
-      ) VALUES(
-        ${want.id},
-        ${gcsFile.bucket.name},
-        ${gcsFile.name}
-      )
-      ON CONFLICT(${sql('wantId')}) DO UPDATE
-      SET
-        ${sql('googleStorageBucket')} = ${gcsFile.bucket.name},
-        ${sql('googleStorageFile')} = ${gcsFile.name},
-        ${sql('updatedAt')} = now()
-    `;
 
     return {
       storage: {
