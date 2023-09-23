@@ -99,8 +99,6 @@ app.use(helmet());
 
 app.use(cors());
 
-app.use('/', healthCheckRouter);
-
 app.use(
   pinoHttp({
     logger,
@@ -128,6 +126,8 @@ app.use(
     },
   })
 );
+
+app.use('/', healthCheckRouter);
 
 app.use(express.json());
 
